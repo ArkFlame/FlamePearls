@@ -4,6 +4,9 @@ disable-endermites: true
 # Chance to spawn an endermite
 endermite-chance: 0.1
 
+# This option will force player to do not take fall damage after teleport from the plugin (ender pearls).
+reset-fall-damage-after-teleport: true
+
 # Damage modifiers
 pearl-damage-self: 5
 pearl-damage-other: 2
