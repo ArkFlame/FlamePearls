@@ -4,6 +4,7 @@ author: ${author}
 main: ${mainClass}
 version: ${version}
 url: ${url}
+api-version: 1.21
 commands:
   flamepearls:
     description: "FlamePearls improves general pearl behaviour and adds new mechanics."
