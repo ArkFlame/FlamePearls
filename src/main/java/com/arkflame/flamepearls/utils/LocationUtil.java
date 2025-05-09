@@ -25,7 +25,6 @@ public class LocationUtil {
         Material type = location.getBlock().getType();
         boolean safe = isSafe(type);
         boolean aboveSafe = isSafe(location.clone().add(0, 1, 0).getBlock().getType());
-        System.out.println("Checking if block at " + formatLocation(location) + " is safe: " + type + " -> " + safe);
         return safe && aboveSafe;
     }
 
@@ -35,7 +34,6 @@ public class LocationUtil {
 
     public static boolean isSlab(Location location) {
         boolean slab = isSlab(location.getBlock().getType());
-        System.out.println("Checking if block at " + formatLocation(location) + " is a slab: " + location.getBlock().getType() + " -> " + slab);
         return slab;
     }
 
@@ -46,25 +44,20 @@ public class LocationUtil {
 
         testLocation.setY(testLocation.getBlockY());
 
-        System.out.println("Starting vertical safety check from " + formatLocation(testLocation));
         while (!isSafe(testLocation) && attempts < 2) {
             attempts++;
             wasSlab = isSlab(testLocation);
             testLocation.add(0, 1, 0);
-            System.out.println("Moved up to " + formatLocation(testLocation) + ", attempt " + attempts);
         }
 
         if (attempts == 0 || !isSafe(testLocation)) {
-            System.out.println("No safe Y position found. Returning original location.");
             return location;
         }
 
         if (wasSlab) {
             testLocation.subtract(0, 0.5, 0);
-            System.out.println("Adjusted for slab at " + formatLocation(testLocation));
         }
 
-        System.out.println("Safe Y found: " + formatLocation(testLocation));
         return testLocation;
     }
 
@@ -74,14 +67,12 @@ public class LocationUtil {
         double length = Math.sqrt(dx * dx + dz * dz);
 
         if (length == 0) {
-            System.out.println("Location equals origin. No direction.");
             return new double[]{0, 0};
         }
 
         double sin = dz / length;
         double cos = dx / length;
 
-        System.out.println("Direction to origin from " + formatLocation(location) + " to " + formatLocation(origin) + ": sin=" + sin + ", cos=" + cos);
         return new double[]{sin, cos};
     }
 
@@ -90,16 +81,12 @@ public class LocationUtil {
         double[] sinCos = getDirectionToOrigin(location, origin);
         int iterations = 0;
 
-        System.out.println("Starting safe location search from " + formatLocation(location));
-
         while (iterations < 10) {
             if (iterations++ > 0) {
                 testLocation.add(sinCos[0], 0, sinCos[1]);
-                System.out.println("Iteration " + iterations + ": moved to " + formatLocation(testLocation));
             }
 
             if (isSafe(testLocation)) {
-                System.out.println("Found safe location: " + formatLocation(testLocation));
                 return testLocation.getBlock().getLocation().add(0.5, 0, 0.5);
             }
 
@@ -107,12 +94,10 @@ public class LocationUtil {
             testLocation = findSafeY(testLocation, origin, world);
 
             if (!testLocation.equals(originalTestLocation)) {
-                System.out.println("Found safe location after Y-check: " + formatLocation(testLocation));
                 return testLocation.getBlock().getLocation().add(0.5, 0, 0.5);
             }
         }
 
-        System.out.println("Failed to find safe location. Returning original.");
         return location;
     }
 
