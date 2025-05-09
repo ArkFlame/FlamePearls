@@ -9,7 +9,7 @@
     <!-- Plugin Information -->
     <name>FlamePearls</name>
     <description>The ultimate all-in-one solution for fixing and enhancing ender pearls.</description>
-    <version>1.0.7</version>
+    <version>1.0.8</version>
     <url>https://github.com/arkflame/flamepearls</url>
 
     <properties>
@@ -24,6 +24,10 @@
             <id>spigot-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
         </repository>
+        <repository>
+            <id>placeholderapi-repo</id>
+            <url>https://repo.extendedclip.com/content/repositories/placeholderapi/</url>
+        </repository>
     </repositories>
 
     <!-- Dependencies imports -->
@@ -32,6 +36,12 @@
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
             <version>1.8.8-R0.1-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>me.clip</groupId>
+            <artifactId>placeholderapi</artifactId>
+            <version>2.11.6</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

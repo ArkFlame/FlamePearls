@@ -35,4 +35,10 @@ public class CooldownManager {
     public void resetCooldown(Player player) {
         lastPearlThrows.remove(player);
     }
+
+
+    public String getFancyCooldown(Player player) {
+        double cooldown = getCooldown(player);
+        return String.format("%.1f", cooldown);
+    }
 }
