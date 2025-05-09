@@ -68,6 +68,9 @@ public class ProjectileHitListener implements Listener {
                     originManager.setAsWillTeleport(player);
                     teleportDataManager.add(player);
                     player.teleport(safeLocation.setDirection(player.getLocation().getDirection()), TeleportCause.ENDER_PEARL);
+                    if (generalConfigHolder.isResetFallDamageAfterTeleport()) {
+                        player.setFallDistance(0);
+                    }
                     // Dealing damage to the player as done in vanilla when teleporting.
                     double damage = generalConfigHolder.getPearlDamageSelf();
                     if(damage >= 0) {

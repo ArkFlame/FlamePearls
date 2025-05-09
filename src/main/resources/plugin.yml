@@ -4,7 +4,8 @@ author: ${author}
 main: ${mainClass}
 version: ${version}
 url: ${url}
-api-version: 1.21
+api-version: 1.13
+soft-depends: [ PlaceholderAPI ]
 commands:
   flamepearls:
     description: "FlamePearls improves general pearl behaviour and adds new mechanics."

@@ -14,6 +14,10 @@ public class GeneralConfigHolder {
     private boolean disableEndermites = true;
     private double endermiteChance = 0.0;
 
+    // Reset fall damage after teleport
+    // It is necessary because if player fall and then teleported he receives damage from the falling too.
+    private boolean resetFallDamageAfterTeleport;
+
     // Damage modifiers
     private double pearlDamageSelf = 5;
     private double pearlDamageOther = 2;
@@ -31,6 +35,9 @@ public class GeneralConfigHolder {
         // Load disable endermites
         disableEndermites = config.getBoolean("disable-endermites", disableEndermites);
         endermiteChance = config.getDouble("endermite-chance", endermiteChance);
+
+        // Load reset fall damage value
+        resetFallDamageAfterTeleport = config.getBoolean("reset-fall-damage-after-teleport", resetFallDamageAfterTeleport);
 
         // Load no damage ticks after teleport.
         noDamageTicksAfterTeleport = config.getInt("teleport-no-damage-ticks");
@@ -65,6 +72,10 @@ public class GeneralConfigHolder {
 
     public boolean isDisableEndermites() {
         return disableEndermites;
+    }
+
+    public boolean isResetFallDamageAfterTeleport() {
+        return resetFallDamageAfterTeleport;
     }
 
     public double getPearlDamageSelf() {
