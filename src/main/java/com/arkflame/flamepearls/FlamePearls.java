@@ -85,7 +85,10 @@ public class FlamePearls extends JavaPlugin implements Listener {
 
         // Register PlaceholderAPI
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            getLogger().info("Registering PlaceholderAPI hook");
             new FlamePearlsPlaceholderHook(this).register();
+        } else {
+            getLogger().info("PlaceholderAPI not found");
         }
     }
 

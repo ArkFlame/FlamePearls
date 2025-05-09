@@ -62,7 +62,7 @@ public class FlamePearlsPlaceholderHook extends PlaceholderExpansion {
             case "cooldown":
                 return FlamePearls.getInstance().getCooldownManager().getFancyCooldown(player);
             default:
-                return null;
+                return "0";
         }
     }
 }

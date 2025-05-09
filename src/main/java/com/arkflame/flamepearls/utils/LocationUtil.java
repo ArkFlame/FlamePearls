@@ -3,18 +3,16 @@ package com.arkflame.flamepearls.utils;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 
 public class LocationUtil {
-    // Check if the type is AIR or CARPET
     public static boolean isSafe(Material type) {
         if (type == null) {
             return true;
         }
 
         String typeName = type.name();
-        return 
-                type == Material.AIR ||
+        return type == Material.AIR ||
+                !type.isSolid() ||
                 typeName.equals("REDSTONE") ||
                 typeName.equals("TRIPWIRE_HOOK") ||
                 typeName.endsWith("PRESSURE_PLATE") ||
@@ -23,57 +21,102 @@ public class LocationUtil {
                 typeName.endsWith("CARPET");
     }
 
-    // A helper method that finds the nearest safest location from a given location,
-    // origin and world
-    public static Location findSafeLocation(Location location, Location origin, World world) {
-        // Clone the original location
-        Location clone = location.clone();
-        Block originalBlock = location.getBlock();
+    public static boolean isSafe(Location location) {
+        Material type = location.getBlock().getType();
+        boolean safe = isSafe(type);
+        boolean aboveSafe = isSafe(location.clone().add(0, 1, 0).getBlock().getType());
+        System.out.println("Checking if block at " + formatLocation(location) + " is safe: " + type + " -> " + safe);
+        return safe && aboveSafe;
+    }
 
-        // Check if location is already safe
-        if (isSafe(originalBlock.getType()) && isSafe(clone.add(0, 1, 0).getBlock().getType())) {
-            // Return the fixed location
-            return originalBlock.getLocation().add(0.5, 0, 0.5);
+    private static boolean isSlab(Material type) {
+        return type.name().endsWith("SLAB");
+    }
+
+    public static boolean isSlab(Location location) {
+        boolean slab = isSlab(location.getBlock().getType());
+        System.out.println("Checking if block at " + formatLocation(location) + " is a slab: " + location.getBlock().getType() + " -> " + slab);
+        return slab;
+    }
+
+    public static Location findSafeY(Location location, Location origin, World world) {
+        Location testLocation = location.clone();
+        int attempts = 0;
+        boolean wasSlab = false;
+
+        testLocation.setY(testLocation.getBlockY());
+
+        System.out.println("Starting vertical safety check from " + formatLocation(testLocation));
+        while (!isSafe(testLocation) && attempts < 2) {
+            attempts++;
+            wasSlab = isSlab(testLocation);
+            testLocation.add(0, 1, 0);
+            System.out.println("Moved up to " + formatLocation(testLocation) + ", attempt " + attempts);
         }
 
-        // Get the coordinates of the location
-        int x = location.getBlockX();
-        int y = location.getBlockY();
-        int z = location.getBlockZ();
-        // Initialize a variable to store the minimum distance to a safe block
-        double minDistance = Double.MAX_VALUE;
-        // Initialize a variable to store the best safe location
-        Location bestLocation = null;
-        // Loop through a 3x3 square around the location on the same y level
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
-                // Get the block at the offset coordinates
-                Material block = world.getBlockAt(x + dx, y, z + dz).getType();
-                // Check if the block is air or water
-                if (!block.isSolid()) {
-                    // Create a new location with the offset coordinates and the same pitch and yaw
-                    // as the original location
-                    Location newLocation = new Location(world, x + dx + 0.5, y, z + dz + 0.5, location.getYaw(),
-                            location.getPitch());
-                    // Calculate the distance between the new location, the original and the origin
-                    double distance = newLocation.distance(location) + newLocation.distance(origin);
-                    // Check if the distance is smaller than or equal to the minimum distance
-                    if (distance <= minDistance) {
-                        // Update the minimum distance and the best location
-                        minDistance = distance;
-                        bestLocation = newLocation;
-                    }
-                }
+        if (attempts == 0 || !isSafe(testLocation)) {
+            System.out.println("No safe Y position found. Returning original location.");
+            return location;
+        }
+
+        if (wasSlab) {
+            testLocation.subtract(0, 0.5, 0);
+            System.out.println("Adjusted for slab at " + formatLocation(testLocation));
+        }
+
+        System.out.println("Safe Y found: " + formatLocation(testLocation));
+        return testLocation;
+    }
+
+    public static double[] getDirectionToOrigin(Location location, Location origin) {
+        double dx = origin.getX() - location.getX();
+        double dz = origin.getZ() - location.getZ();
+        double length = Math.sqrt(dx * dx + dz * dz);
+
+        if (length == 0) {
+            System.out.println("Location equals origin. No direction.");
+            return new double[]{0, 0};
+        }
+
+        double sin = dz / length;
+        double cos = dx / length;
+
+        System.out.println("Direction to origin from " + formatLocation(location) + " to " + formatLocation(origin) + ": sin=" + sin + ", cos=" + cos);
+        return new double[]{sin, cos};
+    }
+
+    public static Location findSafeLocation(Location location, Location origin, World world) {
+        Location testLocation = location.clone();
+        double[] sinCos = getDirectionToOrigin(location, origin);
+        int iterations = 0;
+
+        System.out.println("Starting safe location search from " + formatLocation(location));
+
+        while (iterations < 10) {
+            if (iterations++ > 0) {
+                testLocation.add(sinCos[1], 0, sinCos[0]);
+                System.out.println("Iteration " + iterations + ": moved to " + formatLocation(testLocation));
+            }
+
+            if (isSafe(testLocation)) {
+                System.out.println("Found safe location: " + formatLocation(testLocation));
+                return testLocation;
+            }
+
+            Location originalTestLocation = testLocation.clone();
+            testLocation = findSafeY(testLocation, origin, world);
+
+            if (!testLocation.equals(originalTestLocation)) {
+                System.out.println("Found safe location after Y-check: " + formatLocation(testLocation));
+                return testLocation;
             }
         }
-        // If a safe location is found, return it
-        if (bestLocation != null) {
-            // Floor the Y value of the best location
-            bestLocation.setY(Math.floor(bestLocation.getY()));
 
-            return bestLocation;
-        }
-        // If no safe location is found, return the original location
+        System.out.println("Failed to find safe location. Returning original.");
         return location;
+    }
+
+    private static String formatLocation(Location loc) {
+        return String.format("[%.2f, %.2f, %.2f] in %s", loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getName());
     }
 }

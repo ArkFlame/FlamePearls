@@ -48,13 +48,9 @@
 
     <!-- Build settings -->
     <build>
-        <!-- Name of your compiled artifact -->
         <finalName>${project.artifactId}</finalName>
-        <!-- Directory of .java files -->
         <sourceDirectory>src/main/java</sourceDirectory>
-        <!-- Clean old builds and install dependencies before compile -->
         <defaultGoal>clean install</defaultGoal>
-        <!-- Package files inside resource directory in to the jar -->
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
