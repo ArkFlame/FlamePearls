@@ -61,29 +61,22 @@ public class LocationUtil {
         return testLocation;
     }
 
-    public static double[] getDirectionToOrigin(Location location, Location origin) {
-        double dx = origin.getX() - location.getX();
-        double dz = origin.getZ() - location.getZ();
-        double length = Math.sqrt(dx * dx + dz * dz);
-
-        if (length == 0) {
-            return new double[]{0, 0};
-        }
-
-        double sin = dz / length;
-        double cos = dx / length;
-
-        return new double[]{sin, cos};
-    }
-
     public static Location findSafeLocation(Location location, Location origin, World world) {
+        float yaw = origin.getYaw();
+        double radians = Math.toRadians(yaw);
+        double sin = Math.sin(radians);
+        double cos = -Math.cos(radians);
+        System.out.println("sin: " + sin + ", cos: " + cos);
+        
+        if (location.distance(origin) < 1) {
+            return origin; // Too close, can't teleport
+        }
         Location testLocation = location.clone();
-        double[] sinCos = getDirectionToOrigin(location, origin);
         int iterations = 0;
 
         while (iterations < 10) {
             if (iterations++ > 0) {
-                testLocation.add(sinCos[0], 0, sinCos[1]);
+                testLocation.add(sin, 0, cos);
             }
 
             if (isSafe(testLocation)) {
