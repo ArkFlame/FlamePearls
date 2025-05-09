@@ -49,7 +49,7 @@
     <!-- Build settings -->
     <build>
         <!-- Name of your compiled artifact -->
-        <finalName>${artifactId}</finalName>
+        <finalName>${project.artifactId}</finalName>
         <!-- Directory of .java files -->
         <sourceDirectory>src/main/java</sourceDirectory>
         <!-- Clean old builds and install dependencies before compile -->
