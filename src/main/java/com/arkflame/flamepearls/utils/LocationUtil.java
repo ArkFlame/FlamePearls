@@ -94,13 +94,13 @@ public class LocationUtil {
 
         while (iterations < 10) {
             if (iterations++ > 0) {
-                testLocation.add(sinCos[1], 0, sinCos[0]);
+                testLocation.add(sinCos[0], 0, sinCos[1]);
                 System.out.println("Iteration " + iterations + ": moved to " + formatLocation(testLocation));
             }
 
             if (isSafe(testLocation)) {
                 System.out.println("Found safe location: " + formatLocation(testLocation));
-                return testLocation;
+                return testLocation.getBlock().getLocation().add(0.5, 0, 0.5);
             }
 
             Location originalTestLocation = testLocation.clone();
@@ -108,7 +108,7 @@ public class LocationUtil {
 
             if (!testLocation.equals(originalTestLocation)) {
                 System.out.println("Found safe location after Y-check: " + formatLocation(testLocation));
-                return testLocation;
+                return testLocation.getBlock().getLocation().add(0.5, 0, 0.5);
             }
         }
 
