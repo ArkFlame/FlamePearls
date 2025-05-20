@@ -5,6 +5,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 
+import com.arkflame.flamepearls.FlamePearls;
 import com.arkflame.flamepearls.managers.CooldownManager;
 
 public class PlayerQuitListener implements Listener {
@@ -18,9 +19,8 @@ public class PlayerQuitListener implements Listener {
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        // Remove the player from cooldown list
         cooldownManager.resetCooldown(event.getPlayer());
-
         teleportDataManager.remove(event.getPlayer());
+        FlamePearls.getInstance().getGeneralConfigHolder().removeCooldown(event.getPlayer());
     }
 }

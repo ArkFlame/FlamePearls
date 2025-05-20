@@ -59,7 +59,7 @@ public class FlamePearlsCommand implements CommandExecutor {
         // Set the damage
         statsMessage = statsMessage.replace("{damage-self}", String.valueOf(generalConfigHolder.getPearlDamageSelf()));
         // Set the damage
-        statsMessage = statsMessage.replace("{cooldown}", String.valueOf(generalConfigHolder.getPearlCooldown()));
+        statsMessage = statsMessage.replace("{cooldown}", String.valueOf(generalConfigHolder.getPearlCooldown(null)));
         // Set the damage
         statsMessage = statsMessage.replace("{thrown}", String.valueOf(originManager.getProjectileCount()));
         // Send the message

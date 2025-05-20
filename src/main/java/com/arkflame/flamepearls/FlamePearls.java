@@ -4,7 +4,6 @@ import com.arkflame.flamepearls.managers.TeleportDataManager;
 
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.Configuration;
-import org.bukkit.event.Listener;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -16,6 +15,7 @@ import com.arkflame.flamepearls.listeners.CreatureSpawnListener;
 import com.arkflame.flamepearls.listeners.EntityDamageByEntityListener;
 import com.arkflame.flamepearls.listeners.EntityDamageListener;
 import com.arkflame.flamepearls.listeners.PlayerInteractListener;
+import com.arkflame.flamepearls.listeners.PlayerJoinListener;
 import com.arkflame.flamepearls.listeners.PlayerQuitListener;
 import com.arkflame.flamepearls.listeners.PlayerTeleportListener;
 import com.arkflame.flamepearls.listeners.ProjectileHitListener;
@@ -23,7 +23,7 @@ import com.arkflame.flamepearls.listeners.ProjectileLaunchListener;
 import com.arkflame.flamepearls.managers.CooldownManager;
 import com.arkflame.flamepearls.managers.OriginManager;
 
-public class FlamePearls extends JavaPlugin implements Listener {
+public class FlamePearls extends JavaPlugin {
     // Managers
     private OriginManager originManager;
     private CooldownManager cooldownManager;
@@ -56,27 +56,18 @@ public class FlamePearls extends JavaPlugin implements Listener {
         teleportDataManager = new TeleportDataManager();
 
         // Create the cooldown manager
-        cooldownManager = new CooldownManager(generalConfigHolder);
+        cooldownManager = new CooldownManager();
 
-        // Register the event listener
-        pluginManager.registerEvents(this, this);
-        // Register CreatureSpawnListener
         pluginManager.registerEvents(new CreatureSpawnListener(generalConfigHolder), this);
-        // Register EntityDamageByEntityListener
         pluginManager.registerEvents(new EntityDamageByEntityListener(generalConfigHolder), this);
-        // Register EntityDamageListener
         pluginManager.registerEvents(new EntityDamageListener(teleportDataManager, generalConfigHolder), this);
-        // Register Player Interact Listener
         pluginManager.registerEvents(
                 new PlayerInteractListener(cooldownManager, messagesConfigHolder, generalConfigHolder), this);
-        // Register Player quit listener
+        pluginManager.registerEvents(new PlayerJoinListener(), this);
         pluginManager.registerEvents(new PlayerQuitListener(teleportDataManager, cooldownManager), this);
-        // Register PlayerTeleportListener
         pluginManager.registerEvents(new PlayerTeleportListener(originManager, generalConfigHolder), this);
-        // Register ProjectileHitListener
         pluginManager.registerEvents(new ProjectileHitListener(teleportDataManager, originManager, generalConfigHolder),
                 this);
-        // Register ProjectileLaunchListener
         pluginManager.registerEvents(new ProjectileLaunchListener(originManager), this);
 
         // Register FlamePearls command
@@ -103,6 +94,10 @@ public class FlamePearls extends JavaPlugin implements Listener {
         generalConfigHolder.load(config);
         // Load messages config
         messagesConfigHolder.load(config);
+    }
+
+    public GeneralConfigHolder getGeneralConfigHolder() {
+        return generalConfigHolder;
     }
 
     private static FlamePearls instance;
@@ -134,5 +129,9 @@ public class FlamePearls extends JavaPlugin implements Listener {
      */
     public TeleportDataManager getTeleportDataManager() {
         return teleportDataManager;
+    }
+
+    public static void runAsync(Runnable runnable) {
+        Bukkit.getScheduler().runTaskAsynchronously(getInstance(), runnable);
     }
 }

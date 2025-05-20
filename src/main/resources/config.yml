@@ -1,3 +1,11 @@
+# Permission: flamepearls.cooldown.x
+pearl-cooldowns-perms:
+  - 5
+  - 4
+  - 3
+  - 2
+  - 1
+
 # Disable random endermite spawning
 disable-endermites: true
 
@@ -15,7 +23,7 @@ pearl-damage-other: 2
 teleport-no-damage-ticks: 5
 
 # Pearl cooldown in seconds
-pearl-cooldown: 0.5
+pearl-cooldown: 10
 
 # Sound played when teleporing
 pearl-sound: ENDERMAN_TELEPORT
