@@ -115,7 +115,6 @@ public class GeneralConfigHolder {
                     return;
                 }
             }
-            playerCooldowns.put(player.getUniqueId(), pearlCooldown);
         }
     }
 
