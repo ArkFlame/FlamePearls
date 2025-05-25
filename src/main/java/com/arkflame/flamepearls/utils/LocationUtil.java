@@ -74,17 +74,14 @@ public class LocationUtil {
     }
 
     private static Location findSafeXZ(Player player, Location pearlLocation, Location origin, World world) {
-        if (isSafe(pearlLocation)) {
-            return pearlLocation;
+        Location pearlBlockLocation = pearlLocation.getBlock().getLocation().add(0.5, 0, 0.5);
+        if (isSafe(pearlBlockLocation)) {
+            return pearlBlockLocation;
         }
     
-        double originalX = pearlLocation.getX();
-        double originalZ = pearlLocation.getZ();
-        pearlLocation = pearlLocation.getBlock().getLocation().add(0.5, 0, 0.5);
         double bestDistance = Double.MAX_VALUE;
         Location bestLocation = pearlLocation.clone();
         Location testLocation = pearlLocation.clone();
-        testLocation.setY(origin.getY());
     
         // Check in all 8 directions (4 cardinal + 4 diagonal)
         double[] offsets = { -1, 0, 1 }; // Now includes 0 for single-axis checks
@@ -95,15 +92,15 @@ public class LocationUtil {
                     continue;
                 }
     
-                testLocation.setX(pearlLocation.getX() + xOffset);
-                testLocation.setZ(pearlLocation.getZ() + zOffset);
+                testLocation.setX(pearlBlockLocation.getX() + xOffset);
+                testLocation.setZ(pearlBlockLocation.getZ() + zOffset);
     
                 double distance = testLocation.distance(origin);
     
                 if (distance < bestDistance) {
                     bestDistance = distance;
-                    bestLocation.setX(originalX + xOffset);
-                    bestLocation.setZ(originalZ + zOffset);
+                    bestLocation.setX(pearlBlockLocation.getX() + xOffset);
+                    bestLocation.setZ(pearlBlockLocation.getZ() + zOffset);
                 }
             }
         }
@@ -113,8 +110,6 @@ public class LocationUtil {
             return bestLocation;
         }
     
-        pearlLocation.setX(originalX);
-        pearlLocation.setZ(originalZ);
         return pearlLocation;
     }
 
