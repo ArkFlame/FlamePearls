@@ -47,7 +47,7 @@ public class LocationUtil {
         while (!isSafe(testLocation) && attempts < 2) {
             attempts++;
             wasSlab = isSlab(testLocation);
-            testLocation.add(0, 1, 0);
+            testLocation.add(0, 0.99, 0);
         }
 
         if (attempts == 0 || !isSafe(testLocation)) {
@@ -84,6 +84,7 @@ public class LocationUtil {
 
             Location originalTestLocation = testLocation.clone();
             testLocation = findSafeY(testLocation, origin, world);
+            testLocation = findSafeXZ(testLocation, world);
 
             if (!testLocation.equals(originalTestLocation)) {
                 return testLocation.getBlock().getLocation().add(0.5, 0, 0.5);
@@ -93,7 +94,23 @@ public class LocationUtil {
         return location;
     }
 
-    private static String formatLocation(Location loc) {
-        return String.format("[%.2f, %.2f, %.2f] in %s", loc.getX(), loc.getY(), loc.getZ(), loc.getWorld().getName());
+    private static Location findSafeXZ(Location testLocation, World world) {
+        // Search around 0.5 for safe position
+        if (!isSafe(testLocation)) {
+            testLocation.add(0, 0, -0.5);
+            if (!isSafe(testLocation)) {
+                testLocation.add(0, 0, 1);
+                if (!isSafe(testLocation)) {
+                    testLocation.add(-0.5, 0, -0.5);
+                    if (!isSafe(testLocation)) {
+                        testLocation.add(1, 0, 0);
+                        if (!isSafe(testLocation)) {
+                            testLocation.add(-0.5, 0, 0);
+                        }
+                    }
+                }
+            }
+        }
+        return testLocation;
     }
 }
