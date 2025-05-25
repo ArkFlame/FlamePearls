@@ -66,7 +66,6 @@ public class LocationUtil {
         double radians = Math.toRadians(yaw);
         double sin = Math.sin(radians);
         double cos = -Math.cos(radians);
-        System.out.println("sin: " + sin + ", cos: " + cos);
         
         if (location.distance(origin) < 1) {
             return origin; // Too close, can't teleport
