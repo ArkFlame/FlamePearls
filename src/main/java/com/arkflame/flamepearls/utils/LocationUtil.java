@@ -20,14 +20,27 @@ public class LocationUtil {
                 typeName.equals("TALL_GRASS") ||
                 typeName.equals("LONG_GRASS") ||
                 typeName.equals("FLOWER_POT") ||
-                typeName.contains("_SLAB") ||
-                typeName.contains("_STEP") ||
-                typeName.equals("STEP") ||
+                isStep(typeName) ||
                 typeName.endsWith("CARPET");
     }
 
+    public static boolean isStep(String typeName) {
+        return typeName.contains("_SLAB") ||
+                typeName.contains("_STEP") ||
+                typeName.equals("STEP");
+    }
+
+    public static boolean isStep(Location testLocation) {
+        return isStep(testLocation.getBlock().getType().name());
+    }
+
+    public static Material getTypeAt(Location location) {
+        return location.getWorld().getBlockAt(location.getBlockX(), location.getBlockY(), location.getBlockZ())
+                .getType();
+    }
+
     public static boolean isSafe(Location location) {
-        Material type = location.getBlock().getType();
+        Material type = getTypeAt(location);
         boolean safe = isSafe(type);
         if (!safe) {
             return false;
@@ -49,28 +62,18 @@ public class LocationUtil {
     public static Location findSafeY(Player player, Location pearlLocation, Location origin, World world) {
         Location testLocation = pearlLocation.clone();
         int attempts = 0;
-        boolean wasSlab = false;
-
         testLocation.setY(testLocation.getBlockY());
-
-        while (!isSafe(testLocation) && attempts++ < 2) {
-            wasSlab = isSlab(testLocation);
-            testLocation.add(0, 0.99, 0);
+        while (!isSafe(testLocation) && attempts++ < 3) {
+            testLocation.add(0, 1, 0);
+            if (isStep(testLocation)) {
+                testLocation.add(0, 0.5, 0);
+            }
         }
-
-        if (attempts == 0 || !isSafe(testLocation)) {
-            return pearlLocation;
-        }
-
-        if (wasSlab) {
-            testLocation.subtract(0, 0.5, 0);
-        }
-
         if (!isSafe(testLocation)) {
             return pearlLocation;
+        } else {
+            return testLocation;
         }
-
-        return testLocation;
     }
 
     private static Location findSafeXZ(Player player, Location pearlLocation, Location origin, World world) {
@@ -78,11 +81,11 @@ public class LocationUtil {
         if (isSafe(pearlBlockLocation)) {
             return pearlBlockLocation;
         }
-    
+
         double bestDistance = Double.MAX_VALUE;
         Location bestLocation = pearlLocation.clone();
         Location testLocation = pearlLocation.clone();
-    
+
         // Check in all 8 directions (4 cardinal + 4 diagonal)
         double[] offsets = { -1, 0, 1 }; // Now includes 0 for single-axis checks
         for (double xOffset : offsets) {
@@ -91,12 +94,12 @@ public class LocationUtil {
                 if (xOffset == 0 && zOffset == 0) {
                     continue;
                 }
-    
+
                 testLocation.setX(pearlBlockLocation.getX() + xOffset);
                 testLocation.setZ(pearlBlockLocation.getZ() + zOffset);
-    
+
                 double distance = testLocation.distance(origin);
-    
+
                 if (distance < bestDistance) {
                     bestDistance = distance;
                     bestLocation.setX(pearlBlockLocation.getX() + xOffset);
@@ -105,20 +108,19 @@ public class LocationUtil {
             }
         }
 
-
         if (isSafe(bestLocation)) {
             return bestLocation;
         }
-    
+
         return pearlLocation;
     }
 
     public static Location findSafeLocation(Player player, Location location, Location origin, World world) {
         Location testLocation = location.clone();
         testLocation = findSafeXZ(player, testLocation, origin, world);
+        testLocation = findSafeY(player, testLocation, origin, world);
 
         if (isSafe(testLocation)) {
-            testLocation.setY(testLocation.getBlockY() + (testLocation.getBlock().getType() == Material.AIR ? 0 : 1));
             return testLocation;
         }
 
