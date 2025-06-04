@@ -60,7 +60,7 @@ public class LocationUtil {
     }
 
     public static Location findSafeY(Player player, Location pearlLocation, Location origin, World world) {
-        boolean searchUp = origin.getBlockY() + 2 < pearlLocation.getY();
+        boolean searchUp = origin.getBlockY() + 1.75 < pearlLocation.getY();
         Location testLocation = pearlLocation.clone();
         int attempts = 0;
         testLocation.setY(testLocation.getBlockY());
