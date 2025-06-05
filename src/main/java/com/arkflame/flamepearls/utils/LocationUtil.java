@@ -60,7 +60,7 @@ public class LocationUtil {
     }
 
     public static Location findSafeY(Player player, Location pearlLocation, Location origin, World world) {
-        boolean searchUp = origin.getBlockY() + 1.75 < pearlLocation.getY();
+        boolean searchUp = origin.getY() > pearlLocation.getY();
         Location testLocation = pearlLocation.clone();
         int attempts = 0;
         testLocation.setY(testLocation.getBlockY());
@@ -77,7 +77,7 @@ public class LocationUtil {
         }
     }
 
-    private static Location findSafeXZ(Player player, Location pearlLocation, Location origin, World world) {
+    private static Location findSafeXYZ(Player player, Location pearlLocation, Location origin, World world) {
         Location pearlBlockLocation = pearlLocation.getBlock().getLocation().add(0.5, 0, 0.5);
         if (isSafe(pearlBlockLocation)) {
             return pearlBlockLocation;
@@ -87,41 +87,45 @@ public class LocationUtil {
         Location bestLocation = pearlLocation.clone();
         Location testLocation = pearlLocation.clone();
 
+        double[] sideOffsets = { -0.5, 0.5 };
         // Check in all 8 directions (4 cardinal + 4 diagonal)
         double[] offsets = { -1, 0, 1 }; // Now includes 0 for single-axis checks
         for (double xOffset : offsets) {
             for (double zOffset : offsets) {
-                // Skip (0,0) because it's the original position
-                if (xOffset == 0 && zOffset == 0) {
-                    continue;
-                }
+                for (double yOffset : offsets) {
+                    // Skip (0,0,0) because it's the original position
+                    if (xOffset == 0 && zOffset == 0 && yOffset == 0) {
+                        continue;
+                    }
 
-                testLocation.setX(pearlBlockLocation.getX() + xOffset);
-                testLocation.setZ(pearlBlockLocation.getZ() + zOffset);
-
-                double distance = testLocation.distance(origin);
-
-                if (distance < bestDistance) {
-                    bestDistance = distance;
-                    bestLocation.setX(pearlBlockLocation.getX() + xOffset);
-                    bestLocation.setZ(pearlBlockLocation.getZ() + zOffset);
+                    for (double sideXOffset : sideOffsets) {
+                        for (double sideZOffset : sideOffsets) {
+                            // Apply side offset
+                            testLocation.setX(pearlBlockLocation.getX() + xOffset + sideXOffset);
+                            testLocation.setZ(pearlBlockLocation.getZ() + zOffset + sideZOffset);
+                            // Find nearest to original position
+                            double distance = testLocation.distance(origin);
+                            if (distance < bestDistance) {
+                                bestDistance = distance;
+                                bestLocation.setX(pearlBlockLocation.getX() + xOffset + sideXOffset);
+                                bestLocation.setY(pearlBlockLocation.getY() + yOffset);
+                                bestLocation.setZ(pearlBlockLocation.getZ() + zOffset + sideZOffset);
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        if (isSafe(bestLocation)) {
-            return bestLocation;
-        }
-
-        return pearlLocation;
+        return bestLocation;
     }
 
     public static Location findSafeLocation(Player player, Location location, Location origin, World world) {
         Location testLocation = location.clone();
-        testLocation = findSafeXZ(player, testLocation, origin, world);
-        testLocation = findSafeY(player, testLocation, origin, world);
+        testLocation = findSafeXYZ(player, testLocation, origin, world);
 
-        if (isSafe(testLocation)) {
+        // Location changed, apply safe location
+        if (!testLocation.equals(location)) {
             return testLocation;
         }
 
