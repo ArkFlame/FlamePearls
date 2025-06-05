@@ -60,7 +60,7 @@ public class LocationUtil {
     }
 
     public static Location findSafeY(Player player, Location pearlLocation, Location origin, World world) {
-        boolean searchUp = origin.getY() > pearlLocation.getY();
+        boolean searchUp = origin.getBlockY() + 1 > pearlLocation.getBlockY();
         Location testLocation = pearlLocation.clone();
         int attempts = 0;
         testLocation.setY(testLocation.getBlockY());
@@ -84,10 +84,10 @@ public class LocationUtil {
         }
 
         double bestDistance = Double.MAX_VALUE;
-        Location bestLocation = pearlLocation.clone();
-        Location testLocation = pearlLocation.clone();
+        Location bestLocation = pearlBlockLocation.clone();
+        Location testLocation = pearlBlockLocation.clone();
 
-        double[] sideOffsets = { -0.5, 0.5 };
+        double[] sideOffsets = { -0.5, 0, 0.5 };
         // Check in all 8 directions (4 cardinal + 4 diagonal)
         double[] offsets = { -1, 0, 1 }; // Now includes 0 for single-axis checks
         for (double xOffset : offsets) {
@@ -102,6 +102,7 @@ public class LocationUtil {
                         for (double sideZOffset : sideOffsets) {
                             // Apply side offset
                             testLocation.setX(pearlBlockLocation.getX() + xOffset + sideXOffset);
+                            testLocation.setY(pearlBlockLocation.getY() + yOffset);
                             testLocation.setZ(pearlBlockLocation.getZ() + zOffset + sideZOffset);
                             // Find nearest to original position
                             double distance = testLocation.distance(origin);
@@ -123,7 +124,6 @@ public class LocationUtil {
     public static Location findSafeLocation(Player player, Location location, Location origin, World world) {
         Location testLocation = location.clone();
         testLocation = findSafeXYZ(player, testLocation, origin, world);
-
         // Location changed, apply safe location
         if (!testLocation.equals(location)) {
             return testLocation;
