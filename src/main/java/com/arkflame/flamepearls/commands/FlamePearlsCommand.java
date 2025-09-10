@@ -55,7 +55,7 @@ public class FlamePearlsCommand implements CommandExecutor {
         }
 
         // Reload configuration holders using the injected plugin instance.
-        plugin.loadConfigurationHolders();
+        plugin.reloadConfigurations();
 
         // Send confirmation message.
         sender.sendMessage(messagesConfigHolder.getMessage("reloaded"));

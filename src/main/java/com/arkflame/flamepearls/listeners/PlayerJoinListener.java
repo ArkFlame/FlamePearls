@@ -7,7 +7,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import com.arkflame.flamepearls.FlamePearls;
 
 public class PlayerJoinListener implements Listener {
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onPlayerJoin(PlayerJoinEvent event) {
         FlamePearls.runAsync(() -> {
             FlamePearls.getInstance().getGeneralConfigHolder().updateCooldown(event.getPlayer());

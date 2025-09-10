@@ -5,7 +5,6 @@ import com.arkflame.flamepearls.managers.TeleportDataManager;
 import java.util.Collection;
 
 import org.bukkit.Location;
-import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.Player;
@@ -20,19 +19,18 @@ import com.arkflame.flamepearls.FlamePearls;
 import com.arkflame.flamepearls.config.GeneralConfigHolder;
 import com.arkflame.flamepearls.managers.OriginManager;
 import com.arkflame.flamepearls.utils.LocationUtil;
+import com.arkflame.flamepearls.utils.Sounds;
 
 public class ProjectileHitListener implements Listener {
     private OriginManager originManager;
     private TeleportDataManager teleportDataManager;
     private GeneralConfigHolder generalConfigHolder;
-    private Sound sound;
     private double endermiteChance;
 
     public ProjectileHitListener(TeleportDataManager teleportDataManager, OriginManager originManager, GeneralConfigHolder generalConfigHolder) {
         this.originManager = originManager;
         this.teleportDataManager = teleportDataManager;
         this.generalConfigHolder = generalConfigHolder;
-        this.sound = generalConfigHolder.getPearlSound();
         this.endermiteChance = generalConfigHolder.getEndermiteChance();
     }
 
@@ -80,11 +78,7 @@ public class ProjectileHitListener implements Listener {
                     if (endermiteChance > Math.random()) {
                         world.spawnEntity(safeLocation, org.bukkit.entity.EntityType.ENDERMITE);
                     }
-                    // Check if sound is defined
-                    if (sound != null) {
-                        // Play sound
-                        world.playSound(safeLocation, sound, 5, 1f);
-                    }
+                    Sounds.play(player.getLocation(), 1.0f, 1.0f, generalConfigHolder.getPearlSounds());
                 } else {
                     FlamePearls.getInstance().getLogger().severe("Error while teleporting player with enderpearl. Origin should not be null. ¿Caused by another plugin?");
                 }

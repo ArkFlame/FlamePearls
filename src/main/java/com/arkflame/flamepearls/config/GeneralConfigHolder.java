@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 @Getter
 public class GeneralConfigHolder {
 
+    // ... (Constants remain the same) ...
     private static final String DISABLE_ENDERMITES_PATH = "disable-endermites";
     private static final String ENDERMITE_CHANCE_PATH = "endermite-chance";
     private static final String RESET_FALL_DAMAGE_PATH = "reset-fall-damage-after-teleport";
@@ -36,13 +37,15 @@ public class GeneralConfigHolder {
     private double defaultPearlCooldown;
 
     private List<Integer> permissionCooldownTiers = Collections.emptyList();
-    private Optional<Sound> pearlSound = Optional.empty();
+    // The field is now a List of Sounds to support multiple sounds.
+    private List<Sound> pearlSounds = Collections.emptyList();
     private Set<String> disabledWorlds = Collections.emptySet();
 
     @Getter(AccessLevel.NONE)
     private final Map<UUID, Double> playerCooldowns = new ConcurrentHashMap<>();
 
     public void load(@NotNull Configuration config) {
+        // ... (other config loading remains the same) ...
         disableEndermites = config.getBoolean(DISABLE_ENDERMITES_PATH, true);
         endermiteChance = config.getDouble(ENDERMITE_CHANCE_PATH, 0.0);
         resetFallDamageAfterTeleport = config.getBoolean(RESET_FALL_DAMAGE_PATH, true);
@@ -58,23 +61,52 @@ public class GeneralConfigHolder {
 
         disabledWorlds = new HashSet<>(config.getStringList(DISABLED_WORLDS_PATH));
         
-        pearlSound = loadEnum(config, PEARL_SOUND_PATH, Sound.class);
+        // Use the new, more flexible method to load sounds.
+        pearlSounds = loadSounds(config, PEARL_SOUND_PATH);
     }
 
-    private <T extends Enum<T>> Optional<T> loadEnum(@NotNull Configuration config, @NotNull String path, @NotNull Class<T> enumClass) {
-        String name = config.getString(path);
-        if (name == null || name.isEmpty()) {
-            return Optional.empty();
-        }
-        try {
-            return Optional.of(Enum.valueOf(enumClass, name.toUpperCase(Locale.ROOT)));
-        } catch (IllegalArgumentException e) {
-            Logger logger = FlamePearls.getInstance().getLogger();
-            logger.warning("Invalid " + enumClass.getSimpleName() + " name in config.yml at path '" + path + "': " + name);
-            return Optional.empty();
-        }
-    }
+    /**
+     * Gracefully loads one or more sounds from the configuration.
+     * This method is backward-compatible and supports both a single string
+     * and a list of strings for the sound path.
+     *
+     * @param config The configuration to load from.
+     * @param path   The path to the sound(s).
+     * @return A list of valid Sound enums. Returns an empty list if none are found or valid.
+     */
+    private List<Sound> loadSounds(@NotNull Configuration config, @NotNull String path) {
+        List<String> soundNames;
 
+        if (config.isString(path)) {
+            // Backward compatibility: Handle the old single-string format.
+            soundNames = Collections.singletonList(config.getString(path));
+        } else if (config.isList(path)) {
+            // New format: Handle a list of strings.
+            soundNames = config.getStringList(path);
+        } else {
+            // Path is missing or is not a String/List, return empty.
+            return Collections.emptyList();
+        }
+
+        Logger logger = FlamePearls.getInstance().getLogger();
+
+        // Use Java 8 Streams to parse and validate each sound name.
+        return soundNames.stream()
+                .filter(name -> name != null && !name.isEmpty()) // Ensure name is not null or empty
+                .map(name -> {
+                    try {
+                        return Optional.of(Sound.valueOf(name.toUpperCase(Locale.ROOT)));
+                    } catch (IllegalArgumentException e) {
+                        logger.warning("Invalid sound name in config.yml at path '" + path + "': " + name);
+                        return Optional.<Sound>empty();
+                    }
+                })
+                .filter(Optional::isPresent) // Filter out any invalid sounds
+                .map(Optional::get)         // Unwrap the valid sounds from the Optional
+                .collect(Collectors.toList()); // Collect them into a list
+    }
+    
+    // ... (other methods remain the same) ...
     public double getPearlCooldown(Player player) {
         if (player == null) {
             return defaultPearlCooldown;

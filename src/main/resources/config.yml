@@ -39,8 +39,9 @@ pearl-cooldowns-perms:
 # --- Cosmetics & World Control ---
 
 # Sound played on a successful pearl teleport.
-# For 1.8 servers, use names like 'ENDERMAN_TELEPORT'. For 1.9+, use 'ENTITY_ENDERMAN_TELEPORT'.
-pearl-sound: "ENDERMAN_TELEPORT"
+pearl-sound:
+  - "ENDERMAN_TELEPORT"
+  - "ENTITY_ENDERMAN_TELEPORT"
 
 # Pearls will behave like vanilla (including glitching) in these worlds.
 disabled-worlds:
