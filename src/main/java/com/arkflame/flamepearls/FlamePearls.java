@@ -72,7 +72,7 @@ public class FlamePearls extends JavaPlugin {
 
         // Register FlamePearls command
         getCommand("flamepearls")
-                .setExecutor(new FlamePearlsCommand(generalConfigHolder, originManager, messagesConfigHolder));
+                .setExecutor(new FlamePearlsCommand(this, generalConfigHolder, originManager, messagesConfigHolder));
 
         // Register PlaceholderAPI
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {

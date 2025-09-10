@@ -1,142 +1,102 @@
 package com.arkflame.flamepearls.config;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
+import com.arkflame.flamepearls.FlamePearls;
+import lombok.AccessLevel;
+import lombok.Getter;
 import org.bukkit.Sound;
 import org.bukkit.configuration.Configuration;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
-import com.arkflame.flamepearls.FlamePearls;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
+@Getter
 public class GeneralConfigHolder {
-    // Disable random endermite spawning
-    private boolean disableEndermites = true;
-    private double endermiteChance = 0.0;
 
-    // Reset fall damage after teleport
-    // It is necessary because if player fall and then teleported he receives damage
-    // from the falling too.
+    private static final String DISABLE_ENDERMITES_PATH = "disable-endermites";
+    private static final String ENDERMITE_CHANCE_PATH = "endermite-chance";
+    private static final String RESET_FALL_DAMAGE_PATH = "reset-fall-damage-after-teleport";
+    private static final String NO_DAMAGE_TICKS_PATH = "teleport-no-damage-ticks";
+    private static final String PEARL_DAMAGE_SELF_PATH = "pearl-damage-self";
+    private static final String PEARL_DAMAGE_OTHER_PATH = "pearl-damage-other";
+    private static final String PEARL_COOLDOWN_PATH = "pearl-cooldown";
+    private static final String PEARL_COOLDOWN_PERMS_PATH = "pearl-cooldowns-perms";
+    private static final String PEARL_SOUND_PATH = "pearl-sound";
+    private static final String DISABLED_WORLDS_PATH = "disabled-worlds";
+
+    private boolean disableEndermites;
+    private double endermiteChance;
     private boolean resetFallDamageAfterTeleport;
+    private int noDamageTicksAfterTeleport;
+    private double pearlDamageSelf;
+    private double pearlDamageOther;
+    private double defaultPearlCooldown;
 
-    // Damage modifiers
-    private double pearlDamageSelf = 5;
-    private double pearlDamageOther = 2;
-    private int noDamageTicksAfterTeleport = 0;
+    private List<Integer> permissionCooldownTiers = Collections.emptyList();
+    private Optional<Sound> pearlSound = Optional.empty();
+    private Set<String> disabledWorlds = Collections.emptySet();
 
-    // The pearl cooldown in seconds
-    private double pearlCooldown = 0.5;
-    private List<Integer> pearlCooldowns = new ArrayList<>();
+    @Getter(AccessLevel.NONE)
+    private final Map<UUID, Double> playerCooldowns = new ConcurrentHashMap<>();
 
-    // Sound played when teleporting
-    private Sound pearlSound = null;
+    public void load(@NotNull Configuration config) {
+        disableEndermites = config.getBoolean(DISABLE_ENDERMITES_PATH, true);
+        endermiteChance = config.getDouble(ENDERMITE_CHANCE_PATH, 0.0);
+        resetFallDamageAfterTeleport = config.getBoolean(RESET_FALL_DAMAGE_PATH, true);
+        noDamageTicksAfterTeleport = config.getInt(NO_DAMAGE_TICKS_PATH, 0);
+        pearlDamageSelf = config.getDouble(PEARL_DAMAGE_SELF_PATH, 5.0);
+        pearlDamageOther = config.getDouble(PEARL_DAMAGE_OTHER_PATH, 2.0);
+        defaultPearlCooldown = config.getDouble(PEARL_COOLDOWN_PATH, 0.5);
 
-    private Collection<String> disabledWorlds = null;
+        permissionCooldownTiers = config.getIntegerList(PEARL_COOLDOWN_PERMS_PATH)
+                .stream()
+                .sorted()
+                .collect(Collectors.toList());
 
-    private Map<UUID, Double> playerCooldowns = new ConcurrentHashMap<>();
+        disabledWorlds = new HashSet<>(config.getStringList(DISABLED_WORLDS_PATH));
+        
+        pearlSound = loadEnum(config, PEARL_SOUND_PATH, Sound.class);
+    }
 
-    public void load(Configuration config) {
-        // Load disable endermites
-        disableEndermites = config.getBoolean("disable-endermites", disableEndermites);
-        endermiteChance = config.getDouble("endermite-chance", endermiteChance);
-
-        // Load reset fall damage value
-        resetFallDamageAfterTeleport = config.getBoolean("reset-fall-damage-after-teleport",
-                resetFallDamageAfterTeleport);
-
-        // Load no damage ticks after teleport.
-        noDamageTicksAfterTeleport = config.getInt("teleport-no-damage-ticks");
-
-        // Load pearl damage self
-        pearlDamageSelf = config.getDouble("pearl-damage-self", pearlDamageSelf);
-
-        // Load pearl damage other
-        pearlDamageOther = config.getDouble("pearl-damage-other", pearlDamageOther);
-
-        // Load pearl cooldown
-        pearlCooldown = config.getDouble("pearl-cooldown", pearlCooldown);
-        // Load pearl cooldowns
-        pearlCooldowns = config.getIntegerList("pearl-cooldowns-perms");
-        if (pearlCooldowns != null) {
-            Collections.sort(pearlCooldowns);
+    private <T extends Enum<T>> Optional<T> loadEnum(@NotNull Configuration config, @NotNull String path, @NotNull Class<T> enumClass) {
+        String name = config.getString(path);
+        if (name == null || name.isEmpty()) {
+            return Optional.empty();
         }
-
-        // Load pearl sound name
-        String pearlSoundName = config.getString("pearl-sound");
-
-        // Try processing pearl sound
         try {
-            // Process pearl sound
-            pearlSound = Sound.valueOf(pearlSoundName);
-        } catch (IllegalArgumentException ex) {
-            FlamePearls.getInstance().getLogger().warning("Invalid pearl sound: " + pearlSoundName);
+            return Optional.of(Enum.valueOf(enumClass, name.toUpperCase(Locale.ROOT)));
+        } catch (IllegalArgumentException e) {
+            Logger logger = FlamePearls.getInstance().getLogger();
+            logger.warning("Invalid " + enumClass.getSimpleName() + " name in config.yml at path '" + path + "': " + name);
+            return Optional.empty();
         }
-
-        // Load disabled worlds
-        disabledWorlds = config.getStringList("disabled-worlds");
-        // Convert to hashset for performance
-        if (disabledWorlds != null) {
-            disabledWorlds = new HashSet<>(disabledWorlds);
-        }
-    }
-
-    public boolean isDisableEndermites() {
-        return disableEndermites;
-    }
-
-    public boolean isResetFallDamageAfterTeleport() {
-        return resetFallDamageAfterTeleport;
-    }
-
-    public double getPearlDamageSelf() {
-        return pearlDamageSelf;
-    }
-
-    public double getPearlDamageOther() {
-        return pearlDamageOther;
     }
 
     public double getPearlCooldown(Player player) {
-        return playerCooldowns.getOrDefault(player.getUniqueId(), pearlCooldown);
+        if (player == null) {
+            return defaultPearlCooldown;
+        }
+        return playerCooldowns.getOrDefault(player.getUniqueId(), defaultPearlCooldown);
     }
 
-    public void updateCooldown(Player player) {
-        if (player != null && player.isOnline()) {
-            // Check if player has any of the cooldown permissions
-            for (int cooldown : pearlCooldowns) {
-                if (player.hasPermission("flamepearls.cooldown." + cooldown)) {
-                    playerCooldowns.put(player.getUniqueId(), Math.min(pearlCooldown, cooldown));
-                    return;
-                }
+    public boolean isWorldDisabled(@NotNull String worldName) {
+        return disabledWorlds.contains(worldName);
+    }
+
+    public void updateCooldown(@NotNull Player player) {
+        for (int cooldownTier : permissionCooldownTiers) {
+            if (player.hasPermission("flamepearls.cooldown." + cooldownTier)) {
+                playerCooldowns.put(player.getUniqueId(), Math.min(defaultPearlCooldown, cooldownTier));
+                return;
             }
         }
+        playerCooldowns.remove(player.getUniqueId());
     }
 
-    public void removeCooldown(Player player) {
-        if (player != null) {
-            playerCooldowns.remove(player.getUniqueId());
-        }
-    }
-
-    public Sound getPearlSound() {
-        return pearlSound;
-    }
-
-    public double getEndermiteChance() {
-        return endermiteChance;
-    }
-
-    public int getNoDamageTicksAfterTeleport() {
-        return noDamageTicksAfterTeleport;
-    }
-
-    public Collection<String> getDisabledWorlds() {
-        return disabledWorlds == null ? Collections.emptySet() : disabledWorlds;
+    public void removeCooldown(@NotNull Player player) {
+        playerCooldowns.remove(player.getUniqueId());
     }
 }

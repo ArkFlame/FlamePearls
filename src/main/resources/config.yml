@@ -1,47 +1,47 @@
-# Permission: flamepearls.cooldown.x
-pearl-cooldowns-perms:
-  - 5
-  - 4
-  - 3
-  - 2
-  - 1
+# -------------------------------------------
+# FlamePearls General Configuration
+# -------------------------------------------
 
-# Disable random endermite spawning
+# --- Gameplay Mechanics ---
+
+# Disable the random chance for endermites to spawn from ender pearls.
 disable-endermites: true
 
-# Chance to spawn an endermite
-endermite-chance: 0.1
+# If endermites are not disabled, this is the chance (0.0 to 1.0) for one to spawn.
+endermite-chance: 0.05
 
-# This option will force player to do not take fall damage after teleport from the plugin (ender pearls).
+# Prevents players from taking fall damage that was accumulated before they teleported.
 reset-fall-damage-after-teleport: true
 
-# Damage modifiers
-pearl-damage-self: 5
-pearl-damage-other: 2
-
-# Deal no damage to players after teleport for this amount of ticks
+# Makes a player briefly immune to damage after teleporting (in server ticks, 20 ticks = 1 second).
 teleport-no-damage-ticks: 5
 
-# Pearl cooldown in seconds
-pearl-cooldown: 10
+# --- Damage & Cooldowns ---
 
-# Sound played when teleporing
-pearl-sound: ENDERMAN_TELEPORT
+# Damage dealt to the player who throws the pearl (in half-hearts).
+pearl-damage-self: 5.0 # 2.5 hearts
 
-# Worlds to disablle pearl fixer
-disabled-worlds: []
+# Damage dealt to other entities hit by the pearl (in half-hearts).
+pearl-damage-other: 2.0 # 1 heart
 
-messages:
-  no-permission: "&cYou require the permission&e '{permission}'&c to use this command!"
-  reloaded: "&aFlamePearls by ArkFlame Development was reloaded!"
-  cooldown: "&cWait &e{time}s&c to throw another pearl!"
-  stats: |-
-    &r 
-    &aFlamePearls by ArkFlame Development
-    &r 
-    &8 » &ePearls Damage: &f{damage}&c♥
-    &8 » &ePearls Damage &7(Self)&e: &f{damage-self}&c♥
-    &8 » &ePearls Cooldown: &f{cooldown}s
-    &r 
-    &8 » &ePearls Thrown: &6{thrown}
-    &r 
+# The default cooldown in seconds for players without a specific permission.
+pearl-cooldown: 10.0
+
+# Permission-based cooldowns. Players get the LOWEST value they have permission for.
+# The permission node is flamepearls.cooldown.<number>
+# It's best practice to keep this list sorted from lowest to highest.
+pearl-cooldowns-perms:
+  - 1
+  - 2
+  - 3
+  - 5
+
+# --- Cosmetics & World Control ---
+
+# Sound played on a successful pearl teleport.
+# For 1.8 servers, use names like 'ENDERMAN_TELEPORT'. For 1.9+, use 'ENTITY_ENDERMAN_TELEPORT'.
+pearl-sound: "ENDERMAN_TELEPORT"
+
+# Pearls will behave like vanilla (including glitching) in these worlds.
+disabled-worlds:
+  - "disabled_world"
