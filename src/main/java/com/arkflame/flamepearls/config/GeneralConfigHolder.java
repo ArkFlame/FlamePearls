@@ -28,6 +28,7 @@ public class GeneralConfigHolder {
     private static final String PEARL_SOUND_PATH = "pearl-sound";
     private static final String DISABLED_WORLDS_PATH = "disabled-worlds";
     private static final String MAX_TICKS_ALIVE_PATH = "max-ticks-alive";
+    private static final String PREVENT_WORLD_BORDER_TELEPORT = "prevent-world-border-teleport";
 
     private boolean disableEndermites;
     private double endermiteChance;
@@ -37,6 +38,7 @@ public class GeneralConfigHolder {
     private double pearlDamageOther;
     private double defaultPearlCooldown;
     private int maxTicksAlive;
+    private boolean preventWorldBorderTeleport;
 
     private List<Integer> permissionCooldownTiers = Collections.emptyList();
     // The field is now a List of Sounds to support multiple sounds.
@@ -63,9 +65,9 @@ public class GeneralConfigHolder {
 
         disabledWorlds = new HashSet<>(config.getStringList(DISABLED_WORLDS_PATH));
         
-        // Use the new, more flexible method to load sounds.
         pearlSounds = loadSounds(config, PEARL_SOUND_PATH);
         maxTicksAlive = config.getInt(MAX_TICKS_ALIVE_PATH, 200);
+        preventWorldBorderTeleport = config.getBoolean(PREVENT_WORLD_BORDER_TELEPORT, true);
     }
 
     /**

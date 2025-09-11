@@ -1,7 +1,6 @@
 package com.arkflame.flamepearls.listeners;
 
-import java.util.Collection;
-
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -13,8 +12,8 @@ import com.arkflame.flamepearls.config.GeneralConfigHolder;
 import com.arkflame.flamepearls.managers.OriginManager;
 
 public class PlayerTeleportListener implements Listener {
-    private OriginManager originManager;
-    private GeneralConfigHolder generalConfigHolder;
+    private final OriginManager originManager;
+    private final GeneralConfigHolder generalConfigHolder;
 
     public PlayerTeleportListener(OriginManager originManager, GeneralConfigHolder generalConfigHolder) {
         this.originManager = originManager;
@@ -27,14 +26,26 @@ public class PlayerTeleportListener implements Listener {
         if (event.getCause() == TeleportCause.ENDER_PEARL) {
             // Get the player
             Player player = event.getPlayer();
-            // Get the world
-            World world = player.getLocation().getWorld();
-            // Get disabled worlds
-            Collection<String> disabledWorlds = generalConfigHolder.getDisabledWorlds();
-            // This world is disabled
-            if (disabledWorlds.contains(world.getName())) {
+            // Get the destination location and world
+            Location to = event.getTo();
+            World world = to.getWorld();
+
+            // Safety check for the destination world
+            if (world == null) {
                 return;
             }
+
+            // Check if the destination world is disabled
+            if (generalConfigHolder.isWorldDisabled(world.getName())) {
+                return;
+            }
+
+            // Prevent teleporting outside the world border if configured to do so
+            if (generalConfigHolder.isPreventWorldBorderTeleport() && !world.getWorldBorder().isInside(to)) {
+                event.setCancelled(true);
+                return;
+            }
+            
             if (originManager.canTeleport(player)) {
                 // Teleported
                 originManager.setAsTeleported(player);
