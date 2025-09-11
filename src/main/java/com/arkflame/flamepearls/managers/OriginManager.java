@@ -46,4 +46,8 @@ public class OriginManager {
     public void setAsTeleported(Player player) {
         willTeleport.remove(player);
     }
+
+    public Collection<Projectile> getProjectiles() {
+        return projectileOrigins.keySet();
+    }
 }

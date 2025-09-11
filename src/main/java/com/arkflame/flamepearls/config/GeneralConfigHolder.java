@@ -27,6 +27,7 @@ public class GeneralConfigHolder {
     private static final String PEARL_COOLDOWN_PERMS_PATH = "pearl-cooldowns-perms";
     private static final String PEARL_SOUND_PATH = "pearl-sound";
     private static final String DISABLED_WORLDS_PATH = "disabled-worlds";
+    private static final String MAX_TICKS_ALIVE_PATH = "max-ticks-alive";
 
     private boolean disableEndermites;
     private double endermiteChance;
@@ -35,6 +36,7 @@ public class GeneralConfigHolder {
     private double pearlDamageSelf;
     private double pearlDamageOther;
     private double defaultPearlCooldown;
+    private int maxTicksAlive;
 
     private List<Integer> permissionCooldownTiers = Collections.emptyList();
     // The field is now a List of Sounds to support multiple sounds.
@@ -63,6 +65,7 @@ public class GeneralConfigHolder {
         
         // Use the new, more flexible method to load sounds.
         pearlSounds = loadSounds(config, PEARL_SOUND_PATH);
+        maxTicksAlive = config.getInt(MAX_TICKS_ALIVE_PATH, 200);
     }
 
     /**

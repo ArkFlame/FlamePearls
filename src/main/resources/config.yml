@@ -16,6 +16,9 @@ reset-fall-damage-after-teleport: true
 # Makes a player briefly immune to damage after teleporting (in server ticks, 20 ticks = 1 second).
 teleport-no-damage-ticks: 5
 
+# The maximum amount of time a pearl can be alive (in server ticks, 20 ticks = 1 second).
+max-ticks-alive: 200
+
 # --- Damage & Cooldowns ---
 
 # Damage dealt to the player who throws the pearl (in half-hearts).

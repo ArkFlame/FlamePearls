@@ -8,6 +8,9 @@ import com.arkflame.flamepearls.listeners.*;
 import com.arkflame.flamepearls.managers.CooldownManager;
 import com.arkflame.flamepearls.managers.OriginManager;
 import com.arkflame.flamepearls.managers.TeleportDataManager;
+import com.arkflame.flamepearls.tasks.PearlMaxTicksAliveTask;
+import com.arkflame.flamepearls.utils.FoliaAPI;
+
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -49,6 +52,9 @@ public class FlamePearls extends JavaPlugin {
         registerListeners();
         registerCommands();
         registerHooks();
+
+        PearlMaxTicksAliveTask pearlMaxTicksAliveTask = new PearlMaxTicksAliveTask(originManager, generalConfigHolder);
+        FoliaAPI.runTaskTimer(obj -> pearlMaxTicksAliveTask.run(), 20L, 20L);
 
         getLogger().info("FlamePearls has been enabled successfully.");
     }
