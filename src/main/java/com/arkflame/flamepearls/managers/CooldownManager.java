@@ -30,7 +30,6 @@ public class CooldownManager {
         lastPearlThrows.remove(player);
     }
 
-
     public String getFancyCooldown(Player player) {
         double cooldown = getCooldown(player);
         return String.format("%.1f", cooldown);

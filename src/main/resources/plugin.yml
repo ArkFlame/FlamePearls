@@ -6,6 +6,7 @@ version: ${version}
 url: ${url}
 api-version: 1.13
 softdepend: [ PlaceholderAPI ]
+folia-supported: true
 commands:
   flamepearls:
     description: "FlamePearls improves general pearl behaviour and adds new mechanics."

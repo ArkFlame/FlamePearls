@@ -45,9 +45,8 @@ public class LocationUtil {
         if (!safe) {
             return false;
         }
-        boolean aboveOrBelowSafe = isSafe(location.clone().add(0, 1, 0).getBlock().getType())
+        return isSafe(location.clone().add(0, 1, 0).getBlock().getType())
                 || isSafe(location.clone().add(0, -2, 0).getBlock().getType());
-        return safe && aboveOrBelowSafe;
     }
 
     private static boolean isSlab(Material type) {
@@ -55,8 +54,7 @@ public class LocationUtil {
     }
 
     public static boolean isSlab(Location location) {
-        boolean slab = isSlab(location.getBlock().getType());
-        return slab;
+        return isSlab(location.getBlock().getType());
     }
 
     public static Location findSafeY(Player player, Location pearlLocation, Location origin, World world) {

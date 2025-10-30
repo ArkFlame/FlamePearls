@@ -2,9 +2,8 @@ package com.arkflame.flamepearls.tasks;
 
 import com.arkflame.flamepearls.config.GeneralConfigHolder;
 import com.arkflame.flamepearls.managers.OriginManager;
+import com.arkflame.flamepearls.utils.FoliaAPI;
 import org.bukkit.entity.Projectile;
-
-import java.util.Iterator;
 
 /**
  * A task that runs periodically to clean up ender pearls that have
@@ -39,19 +38,16 @@ public class PearlMaxTicksAliveTask implements Runnable {
 
         // Get the iterator directly from the manager's projectile collection.
         // Using an iterator is required to safely remove elements during the loop.
-        Iterator<Projectile> iterator = originManager.getProjectiles().iterator();
 
-        while (iterator.hasNext()) {
-            Projectile projectile = iterator.next();
-
+        for (Projectile projectile : originManager.getProjectiles()) {
             // Check if the pearl is dead (e.g., hit a block) or has exceeded its lifetime.
-            if (projectile.isDead() || projectile.getTicksLived() > maxTicksAlive) {
-                // First, remove the actual entity from the Minecraft world.
-                projectile.remove();
-                
-                // Then, use the iterator to safely remove it from our tracked collection.
-                iterator.remove();
-            }
+            FoliaAPI.runTaskForEntity(projectile, () -> {
+                if (projectile.isDead() || projectile.getTicksLived() > maxTicksAlive) {
+                    projectile.remove();
+                    originManager.getProjectiles().remove(projectile);
+                }
+            }, () -> {
+            }, 1L);
         }
     }
 }
