@@ -36,12 +36,10 @@ public final class Sounds {
         if (sounds.isEmpty()) {
             return;
         }
-        FoliaAPI.runTaskForEntity(player, () -> {
-            Location loc = player.getLocation();
-            for (Sound sound : sounds) {
-                player.playSound(loc, sound, volume, pitch);
-            }
-        });
+        Location loc = player.getLocation();
+        for (Sound sound : sounds) {
+            player.playSound(loc, sound, volume, pitch);
+        }
     }
 
     /**
@@ -57,11 +55,9 @@ public final class Sounds {
         if (sounds.isEmpty()) {
             return;
         }
-        FoliaAPI.runTaskForRegion(location, () -> {
-            for (Sound sound : sounds) {
-                location.getWorld().playSound(location, sound, volume, pitch);
-            }
-        });
+        for (Sound sound : sounds) {
+            location.getWorld().playSound(location, sound, volume, pitch);
+        }
     }
     
     // --- Sound Finding & String-based Playing Methods ---
@@ -91,9 +87,7 @@ public final class Sounds {
      */
     public static void play(@NotNull Player player, float volume, float pitch, @NotNull String... soundNames) {
         findFirstValid(Arrays.asList(soundNames)).ifPresent(sound ->
-            FoliaAPI.runTaskForEntity(player, () ->
-                    player.playSound(player.getLocation(), sound, volume, pitch)
-            )
+                player.playSound(player.getLocation(), sound, volume, pitch)
         );
     }
     
@@ -102,9 +96,7 @@ public final class Sounds {
      */
     public static void play(@NotNull Location location, float volume, float pitch, @NotNull String... soundNames) {
         findFirstValid(Arrays.asList(soundNames)).ifPresent(sound ->
-            FoliaAPI.runTaskForRegion(location, () ->
-                    location.getWorld().playSound(location, sound, volume, pitch)
-            )
+                location.getWorld().playSound(location, sound, volume, pitch)
         );
     }
 
@@ -136,9 +128,7 @@ public final class Sounds {
         
         soundOptional.ifPresent(sound -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
-                FoliaAPI.runTaskForEntity(player, () ->
-                        player.playSound(player.getLocation(), sound, volume, pitch)
-                );
+                player.playSound(player.getLocation(), sound, volume, pitch);
             }
         });
     }

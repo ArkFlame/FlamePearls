@@ -34,7 +34,7 @@ public class FlamePearls extends JavaPlugin {
     private OriginManager originManager = new OriginManager();
     private CooldownManager cooldownManager = new CooldownManager();
     private TeleportDataManager teleportDataManager = new TeleportDataManager();
-    
+
     // Hooks
     private FlamePearlsPlaceholderHook placeholderHook;
 
@@ -123,6 +123,6 @@ public class FlamePearls extends JavaPlugin {
      * @param runnable The task to run.
      */
     public static void runAsync(Runnable runnable) {
-        Bukkit.getScheduler().runTaskAsynchronously(getInstance(), runnable);
+        FoliaAPI.runTaskAsync(runnable);
     }
 }

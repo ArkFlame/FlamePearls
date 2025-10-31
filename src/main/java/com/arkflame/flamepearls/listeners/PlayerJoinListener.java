@@ -9,8 +9,6 @@ import com.arkflame.flamepearls.FlamePearls;
 public class PlayerJoinListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onPlayerJoin(PlayerJoinEvent event) {
-        FlamePearls.runAsync(() -> {
-            FlamePearls.getInstance().getGeneralConfigHolder().updateCooldown(event.getPlayer());
-        });
+        FlamePearls.runAsync(() -> FlamePearls.getInstance().getGeneralConfigHolder().updateCooldown(event.getPlayer()));
     }
 }

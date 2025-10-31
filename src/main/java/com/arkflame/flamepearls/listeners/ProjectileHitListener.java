@@ -4,9 +4,11 @@ import com.arkflame.flamepearls.managers.TeleportDataManager;
 
 import java.util.Collection;
 
+import com.arkflame.flamepearls.utils.FoliaAPI;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.EnderPearl;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
@@ -65,18 +67,27 @@ public class ProjectileHitListener implements Listener {
                     // Will teleport
                     originManager.setAsWillTeleport(player);
                     teleportDataManager.add(player);
-                    player.teleport(safeLocation.setDirection(player.getLocation().getDirection()), TeleportCause.ENDER_PEARL);
+                    FoliaAPI.teleportPlayer(player, safeLocation.setDirection(player.getLocation().getDirection()), TeleportCause.ENDER_PEARL);
+                    originManager.setAsTeleported(player);
                     if (generalConfigHolder.isResetFallDamageAfterTeleport()) {
                         player.setFallDistance(0);
                     }
                     // Dealing damage to the player as done in vanilla when teleporting.
                     double damage = generalConfigHolder.getPearlDamageSelf();
-                    if(damage >= 0) {
+                    if (damage >= 0) {
                         player.damage(damage, projectile);
                     }
                     // Spawn endermite if chance is higher
                     if (endermiteChance > Math.random()) {
-                        world.spawnEntity(safeLocation, org.bukkit.entity.EntityType.ENDERMITE);
+                        final Location spawnLoc = projectile.getLocation();
+                        FoliaAPI.runTaskForEntity(
+                                projectile, () -> {
+                                    World spawnWorld = spawnLoc.getWorld();
+                                    if (spawnWorld != null) {
+                                        spawnWorld.spawnEntity(spawnLoc, EntityType.ENDERMITE);
+                                    }
+                                }, () -> {}, 1L
+                        );
                     }
                     Sounds.play(player.getLocation(), 1.0f, 1.0f, generalConfigHolder.getPearlSounds());
                 } else {
