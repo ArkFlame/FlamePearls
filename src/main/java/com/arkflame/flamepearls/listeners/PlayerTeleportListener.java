@@ -33,7 +33,8 @@ public class PlayerTeleportListener implements Listener {
                         if (originManager.canTeleport(player)) {
                             originManager.setAsTeleported(player);
                         }
-                    }, () -> {}, 1L);
+                    }, () -> {
+                    }, 1L);
                 }
             }, 1L, 10L);
         }
@@ -68,7 +69,7 @@ public class PlayerTeleportListener implements Listener {
             }
 
             // Prevent teleporting outside the world border if configured to do so
-            if (generalConfigHolder.isPreventWorldBorderTeleport() && !world.getWorldBorder().isInside(to)) {
+            if (generalConfigHolder.isPreventWorldBorderTeleport() && !isInsideWorldBorder(world, to)) {
                 event.setCancelled(true);
                 return;
             }
@@ -82,6 +83,20 @@ public class PlayerTeleportListener implements Listener {
             // Reference event then cancel
             event.setTo(event.getFrom());
             event.setCancelled(true);
+        }
+    }
+
+    private boolean isInsideWorldBorder(World world, Location loc) {
+        try {
+            // Modern servers: use the real API
+            return world.getWorldBorder().isInside(loc);
+        } catch (NoSuchMethodError ignored) {
+            // Old servers (1.8): fallback to square border
+            org.bukkit.WorldBorder wb = world.getWorldBorder();
+            double half = wb.getSize() / 2.0;
+            Location c = wb.getCenter();
+            return Math.abs(loc.getX() - c.getX()) <= half &&
+                    Math.abs(loc.getZ() - c.getZ()) <= half;
         }
     }
 }
