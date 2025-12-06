@@ -53,7 +53,6 @@ pearl-sound:
 disabled-worlds:
   - "disabled_world"
 
-
 messages:
   no-permission: "&cYou require the permission&e '{permission}'&c to use this command!"
   reloaded: "&aFlamePearls by ArkFlame Development was reloaded!"
