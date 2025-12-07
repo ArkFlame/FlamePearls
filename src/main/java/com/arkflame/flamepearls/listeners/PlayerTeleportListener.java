@@ -6,6 +6,7 @@ import com.arkflame.flamepearls.utils.FoliaAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.WorldBorder;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -87,12 +88,12 @@ public class PlayerTeleportListener implements Listener {
     }
 
     private boolean isInsideWorldBorder(World world, Location loc) {
+        WorldBorder wb = world.getWorldBorder();
         try {
             // Modern servers: use the real API
-            return world.getWorldBorder().isInside(loc);
+            return wb.isInside(loc);
         } catch (NoSuchMethodError ignored) {
-            // Old servers (1.8): fallback to square border
-            org.bukkit.WorldBorder wb = world.getWorldBorder();
+            //  Old servers (1.8): fallback to square border
             double half = wb.getSize() / 2.0;
             Location c = wb.getCenter();
             return Math.abs(loc.getX() - c.getX()) <= half &&
