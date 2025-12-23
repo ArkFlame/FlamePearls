@@ -90,6 +90,7 @@ public class ProjectileHitListener implements Listener {
                         );
                     }
                     Sounds.play(player.getLocation(), 1.0f, 1.0f, generalConfigHolder.getPearlSounds());
+                    event.setCancelled(false);
                 } else {
                     FlamePearls.getInstance().getLogger().severe("Error while teleporting player with enderpearl. Origin should not be null. ¿Caused by another plugin?");
                 }
