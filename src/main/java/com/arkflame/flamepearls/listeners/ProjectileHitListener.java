@@ -36,7 +36,7 @@ public class ProjectileHitListener implements Listener {
         this.endermiteChance = generalConfigHolder.getEndermiteChance();
     }
 
-    @EventHandler(ignoreCancelled = true)
+    @EventHandler
     public void onProjectileHit(ProjectileHitEvent event) {
         Projectile projectile = event.getEntity();
 
