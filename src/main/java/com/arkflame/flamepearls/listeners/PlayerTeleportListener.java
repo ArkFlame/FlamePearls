@@ -6,6 +6,7 @@ import com.arkflame.flamepearls.utils.FoliaAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.WorldBorder;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -68,7 +69,7 @@ public class PlayerTeleportListener implements Listener {
             }
 
             // Prevent teleporting outside the world border if configured to do so
-            if (generalConfigHolder.isPreventWorldBorderTeleport() && !world.getWorldBorder().isInside(to)) {
+            if (generalConfigHolder.isPreventWorldBorderTeleport() && !isInsideWorldBorder(to)) {
                 event.setCancelled(true);
                 return;
             }
@@ -83,5 +84,17 @@ public class PlayerTeleportListener implements Listener {
             event.setTo(event.getFrom());
             event.setCancelled(true);
         }
+    }
+
+    private boolean isInsideWorldBorder(Location loc) {
+        WorldBorder border = loc.getWorld().getWorldBorder();
+        double size = border.getSize() / 2.0;
+        double centerX = border.getCenter().getX();
+        double centerZ = border.getCenter().getZ();
+        double x = loc.getX();
+        double z = loc.getZ();
+
+        return (x >= centerX - size && x <= centerX + size) &&
+               (z >= centerZ - size && z <= centerZ + size);
     }
 }
