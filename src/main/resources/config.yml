@@ -52,3 +52,18 @@ pearl-sound:
 # Pearls will behave like vanilla (including glitching) in these worlds.
 disabled-worlds:
   - "disabled_world"
+
+messages:
+  no-permission: "&cYou require the permission&e '{permission}'&c to use this command!"
+  reloaded: "&aFlamePearls by ArkFlame Development was reloaded!"
+  cooldown: "&cWait &e{time}s&c to throw another pearl!"
+  stats: |-
+    &r 
+    &aFlamePearls by ArkFlame Development
+    &r 
+    &8 » &ePearls Damage: &f{damage}&c♥
+    &8 » &ePearls Damage &7(Self)&e: &f{damage-self}&c♥
+    &8 » &ePearls Cooldown: &f{cooldown}s
+    &r 
+    &8 » &ePearls Thrown: &6{thrown}
+    &r
