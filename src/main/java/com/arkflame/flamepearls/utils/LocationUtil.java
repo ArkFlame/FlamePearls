@@ -129,4 +129,40 @@ public class LocationUtil {
 
         return location;
     }
+    
+    /**
+     * Checks if the head is stuck in a block.
+     * If stuck, it checks if the block below is safe for both feet and head.
+     * 
+     * @param location The current calculated teleport location (feet)
+     * @return A location moved down 1 block if the head was stuck and the lower position is safe.
+     */
+    public static Location fixHeadStuck(Location location) {
+        // The block where the head will be (1 block above the feet)
+        Location headLocation = location.clone().add(0, 1, 0);
+        Material headType = getTypeAt(headLocation);
+        String headName = headType.name();
+
+        // Skip for any materials containing "SLAB" or "STEP"
+        if (headName.contains("SLAB") || headName.contains("STEP")) {
+            return location;
+        }
+
+        // Check if the current head is stuck (not safe)
+        if (!isSafe(headType)) {
+            // Get the location 1 block below the current feet
+            Location lowerLocation = location.clone().add(0, -1, 0);
+            
+            // New feet is the block below, new head is the current feet block
+            Material newFeetType = getTypeAt(lowerLocation);
+            Material newHeadType = getTypeAt(location); // location is 1 block above lowerLocation
+
+            // If the lower position is safe for both feet and head, return it
+            if (isSafe(newFeetType) && isSafe(newHeadType)) {
+                return lowerLocation;
+            }
+        }
+
+        return location;
+    }
 }
