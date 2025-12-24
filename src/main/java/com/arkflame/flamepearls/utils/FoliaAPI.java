@@ -233,17 +233,43 @@ public class FoliaAPI {
         invokeMethod(method, globalRegionScheduler, FlamePearls.getInstance(), run, delay);
     }
 
-    public static void runTaskForEntity(Entity entity, Runnable run, Runnable retired, long delay) {
-        if (!isFolia()) {
-            bS.runTaskLater(FlamePearls.getInstance(), run, delay);
-            return;
-        }
-        if (entity == null) return;
-        Method getSchedulerMethod = cachedMethods.get("entity.getScheduler");
-        Object entityScheduler = invokeMethod(getSchedulerMethod, entity);
-        Method executeMethod = cachedMethods.get("entityScheduler.execute");
-        invokeMethod(executeMethod, entityScheduler, FlamePearls.getInstance(), run, retired, delay);
+public static void runTaskForEntity(Entity entity, Runnable run, Runnable retired, long delay) {
+    if (entity == null) return;
+
+    if (!isFolia()) {
+        Bukkit.getScheduler().runTaskLater(FlamePearls.getInstance(), run, delay);
+        return;
     }
+
+    try {
+        // 1. Get the scheduler: entity.getScheduler()
+        Method getSchedulerMethod = entity.getClass().getMethod("getScheduler");
+        Object entityScheduler = getSchedulerMethod.invoke(entity);
+
+        // 2. Get the execute method: execute(Plugin, Runnable, Runnable, long)
+        // Note: The last parameter MUST be long.class (primitive)
+        Method executeMethod = entityScheduler.getClass().getMethod(
+            "execute", 
+            org.bukkit.plugin.Plugin.class, 
+            Runnable.class, 
+            Runnable.class, 
+            long.class
+        );
+
+        // 3. Invoke
+        executeMethod.invoke(
+            entityScheduler, 
+            FlamePearls.getInstance(), 
+            run, 
+            retired, 
+            Math.max(1L, delay)
+        );
+    } catch (Exception e) {
+        e.printStackTrace();
+        // If reflection fails, run it immediately as a failsafe so the code doesn't "stuck"
+        run.run(); 
+    }
+}
 
     public static void runTaskForEntityRepeating(Entity entity, Consumer<Object> task, Runnable retired,
                                                  long initialDelay, long period) {
