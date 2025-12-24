@@ -438,7 +438,7 @@ public static void runTaskForEntity(Entity entity, Runnable run, Runnable retire
                     return;
                 }
                 out.complete(e.teleport(location));
-            }, () -> {}, 1L);
+            }, () -> {}, 2L);
             return out;
         }
         Method teleportAsyncWithCause = cachedMethods.get("player.teleportAsyncCause");
