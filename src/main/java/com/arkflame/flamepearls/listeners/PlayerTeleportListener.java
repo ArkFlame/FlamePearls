@@ -26,18 +26,6 @@ public class PlayerTeleportListener implements Listener {
     public PlayerTeleportListener(OriginManager originManager, GeneralConfigHolder generalConfigHolder) {
         this.originManager = originManager;
         this.generalConfigHolder = generalConfigHolder;
-
-        if (FoliaAPI.isFolia()) {
-            FoliaAPI.runTaskTimer(obj -> {
-                for (Player player : Bukkit.getOnlinePlayers()) {
-                    FoliaAPI.runTaskForEntity(player, () -> {
-                        if (originManager.canTeleport(player)) {
-                            originManager.setAsTeleported(player);
-                        }
-                    }, () -> {}, 1L);
-                }
-            }, 1L, 10L);
-        }
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -73,16 +61,6 @@ public class PlayerTeleportListener implements Listener {
                 event.setCancelled(true);
                 return;
             }
-
-            if (originManager.canTeleport(player)) {
-                // Event-based finalization of a valid pearl teleport
-                originManager.setAsTeleported(player);
-                return;
-            }
-
-            // Reference event then cancel
-            event.setTo(event.getFrom());
-            event.setCancelled(true);
         }
     }
 

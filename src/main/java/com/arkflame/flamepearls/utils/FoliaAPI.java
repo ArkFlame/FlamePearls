@@ -464,7 +464,7 @@ public static void runTaskForEntity(Entity entity, Runnable run, Runnable retire
         if (cause != null) {
             return CompletableFuture.completedFuture(e.teleport(location, cause));
         }
-        e.teleport(location);
+        runTaskForEntity(e, () -> e.teleport(location), () -> {}, 1L);
         return CompletableFuture.completedFuture(true);
     }
 

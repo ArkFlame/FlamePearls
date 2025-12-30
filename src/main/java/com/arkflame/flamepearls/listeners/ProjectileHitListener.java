@@ -65,10 +65,8 @@ public class ProjectileHitListener implements Listener {
                     // Try to find the nearest safest position
                     Location safeLocation = LocationUtil.findSafeLocation(player, location, origin, world);
                     // Will teleport
-                    originManager.setAsWillTeleport(player);
                     teleportDataManager.add(player);
                     FoliaAPI.teleportPlayer(player, safeLocation.setDirection(player.getLocation().getDirection()), TeleportCause.ENDER_PEARL);
-                    originManager.setAsTeleported(player);
                     if (generalConfigHolder.isResetFallDamageAfterTeleport()) {
                         player.setFallDistance(0);
                     }

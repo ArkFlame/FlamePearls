@@ -3,10 +3,12 @@ package com.arkflame.flamepearls.utils;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
 public class LocationUtil {
-    public static boolean isSafe(Material type) {
+    public static boolean isSafe(Block block) {
+        Material type = block.getType();
         if (type == null) {
             return true;
         }
@@ -34,19 +36,18 @@ public class LocationUtil {
         return isStep(testLocation.getBlock().getType().name());
     }
 
-    public static Material getTypeAt(Location location) {
-        return location.getWorld().getBlockAt(location.getBlockX(), location.getBlockY(), location.getBlockZ())
-                .getType();
+    public static Block getBlockAt(Location location) {
+        return location.getWorld().getBlockAt(location.getBlockX(), location.getBlockY(), location.getBlockZ());
     }
 
     public static boolean isSafe(Location location) {
-        Material type = getTypeAt(location);
-        boolean safe = isSafe(type);
+        Block block = getBlockAt(location);
+        boolean safe = isSafe(block);
         if (!safe) {
             return false;
         }
-        return isSafe(location.clone().add(0, 1, 0).getBlock().getType())
-                || isSafe(location.clone().add(0, -2, 0).getBlock().getType());
+        return isSafe(location.clone().add(0, 1, 0).getBlock())
+                || isSafe(location.clone().add(0, -2, 0).getBlock());
     }
 
     private static boolean isSlab(Material type) {
@@ -115,7 +116,9 @@ public class LocationUtil {
                 }
             }
         }
-
+        if (!isSafe(bestLocation)) {
+            bestLocation = fixHeadStuck(bestLocation);
+        }
         return bestLocation;
     }
 
@@ -138,28 +141,19 @@ public class LocationUtil {
      * @return A location moved down 1 block if the head was stuck and the lower position is safe.
      */
     public static Location fixHeadStuck(Location location) {
-        // The block where the head will be (1 block above the feet)
-        Location headLocation = location.clone().add(0, 1, 0);
-        Material headType = getTypeAt(headLocation);
-        String headName = headType.name();
-
-        // Skip for any materials containing "SLAB" or "STEP"
-        if (headName.contains("SLAB") || headName.contains("STEP")) {
-            return location;
-        }
+        Location lowerLocation = location.getBlock().getLocation();
+        Location headLocation = lowerLocation.clone().add(0, 1, 0);
+        Block headBlock = getBlockAt(headLocation);
 
         // Check if the current head is stuck (not safe)
-        if (!isSafe(headType)) {
-            // Get the location 1 block below the current feet
-            Location lowerLocation = location.clone().add(0, -1, 0);
-            
-            // New feet is the block below, new head is the current feet block
-            Material newFeetType = getTypeAt(lowerLocation);
-            Material newHeadType = getTypeAt(location); // location is 1 block above lowerLocation
+        if (!isSafe(headBlock)) {
+            Block newFeetBlock = getBlockAt(lowerLocation.add(0, -1, 0));
+            Block newHeadBlock = getBlockAt(headLocation.add(0, -1, 0));
 
             // If the lower position is safe for both feet and head, return it
-            if (isSafe(newFeetType) && isSafe(newHeadType)) {
-                return lowerLocation;
+            if (isSafe(newFeetBlock) && isSafe(newHeadBlock)) {
+                location.setY(newFeetBlock.getY());
+                return location;
             }
         }
 

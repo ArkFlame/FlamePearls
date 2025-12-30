@@ -35,18 +35,6 @@ public class OriginManager {
         return projectileCount;
     }
 
-    public void setAsWillTeleport(Player player) {
-        willTeleport.add(player);
-    }
-
-    public boolean canTeleport(Player player) {
-        return willTeleport.contains(player);
-    }
-
-    public void setAsTeleported(Player player) {
-        willTeleport.remove(player);
-    }
-
     public Collection<Projectile> getProjectiles() {
         return projectileOrigins.keySet();
     }
