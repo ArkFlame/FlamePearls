@@ -17,7 +17,7 @@ reset-fall-damage-after-teleport: true
 teleport-no-damage-ticks: 5
 
 # The maximum amount of time a pearl can be alive (in server ticks, 20 ticks = 1 second).
-max-ticks-alive: 200
+max-ticks-alive: 1200
 
 # Prevents players from teleporting to a location outside of the world border.
 prevent-world-border-teleport: true

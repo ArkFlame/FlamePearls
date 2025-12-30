@@ -66,7 +66,7 @@ public class GeneralConfigHolder {
         disabledWorlds = new HashSet<>(config.getStringList(DISABLED_WORLDS_PATH));
         
         pearlSounds = loadSounds(config, PEARL_SOUND_PATH);
-        maxTicksAlive = config.getInt(MAX_TICKS_ALIVE_PATH, 200);
+        maxTicksAlive = config.getInt(MAX_TICKS_ALIVE_PATH, 1200);
         preventWorldBorderTeleport = config.getBoolean(PREVENT_WORLD_BORDER_TELEPORT, true);
     }
 
