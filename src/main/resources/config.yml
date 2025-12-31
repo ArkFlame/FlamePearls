@@ -53,6 +53,9 @@ pearl-sound:
 disabled-worlds:
   - "disabled_world"
 
+# Whether to reset a player's velocity to zero after teleporting.
+reset-velocity-after-teleport: true
+
 messages:
   no-permission: "&cYou require the permission&e '{permission}'&c to use this command!"
   reloaded: "&aFlamePearls by ArkFlame Development was reloaded!"

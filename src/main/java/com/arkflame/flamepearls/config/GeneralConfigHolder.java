@@ -39,6 +39,7 @@ public class GeneralConfigHolder {
     private double defaultPearlCooldown;
     private int maxTicksAlive;
     private boolean preventWorldBorderTeleport;
+    private boolean resetVelocityAfterTeleport;
 
     private List<Integer> permissionCooldownTiers = Collections.emptyList();
     // The field is now a List of Sounds to support multiple sounds.
@@ -68,6 +69,7 @@ public class GeneralConfigHolder {
         pearlSounds = loadSounds(config, PEARL_SOUND_PATH);
         maxTicksAlive = config.getInt(MAX_TICKS_ALIVE_PATH, 1200);
         preventWorldBorderTeleport = config.getBoolean(PREVENT_WORLD_BORDER_TELEPORT, true);
+        resetVelocityAfterTeleport = config.getBoolean("reset-velocity-after-teleport", true);
     }
 
     /**
@@ -135,5 +137,9 @@ public class GeneralConfigHolder {
 
     public void removeCooldown(@NotNull Player player) {
         playerCooldowns.remove(player.getUniqueId());
+    }
+
+    public boolean isResetVelocityAfterTeleport() {
+        return resetVelocityAfterTeleport;
     }
 }

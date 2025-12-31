@@ -16,6 +16,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.projectiles.ProjectileSource;
+import org.bukkit.util.Vector;
 
 import com.arkflame.flamepearls.FlamePearls;
 import com.arkflame.flamepearls.config.GeneralConfigHolder;
@@ -66,7 +67,11 @@ public class ProjectileHitListener implements Listener {
                     Location safeLocation = LocationUtil.findSafeLocation(player, location, origin, world);
                     // Will teleport
                     teleportDataManager.add(player);
+                    Vector originalVelocityLocation = player.getVelocity();
                     FoliaAPI.teleportPlayer(player, safeLocation.setDirection(player.getLocation().getDirection()), TeleportCause.ENDER_PEARL);
+                    if (!generalConfigHolder.isResetVelocityAfterTeleport()) {
+                        player.setVelocity(originalVelocityLocation);
+                    }
                     if (generalConfigHolder.isResetFallDamageAfterTeleport()) {
                         player.setFallDistance(0);
                     }
