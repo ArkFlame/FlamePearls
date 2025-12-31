@@ -22,6 +22,7 @@ import com.arkflame.flamepearls.FlamePearls;
 import com.arkflame.flamepearls.config.GeneralConfigHolder;
 import com.arkflame.flamepearls.managers.OriginManager;
 import com.arkflame.flamepearls.utils.LocationUtil;
+import com.arkflame.flamepearls.utils.Players;
 import com.arkflame.flamepearls.utils.Sounds;
 
 public class ProjectileHitListener implements Listener {
@@ -68,12 +69,14 @@ public class ProjectileHitListener implements Listener {
                     // Will teleport
                     teleportDataManager.add(player);
                     Vector originalVelocityLocation = player.getVelocity();
+                    boolean gliding = Players.isGliding(player);
                     FoliaAPI.teleportPlayer(player, safeLocation.setDirection(player.getLocation().getDirection()), TeleportCause.ENDER_PEARL);
                     if (!generalConfigHolder.isResetVelocityAfterTeleport()) {
                         player.setVelocity(originalVelocityLocation);
                     }
                     if (generalConfigHolder.isResetFallDamageAfterTeleport()) {
                         player.setFallDistance(0);
+                        Players.setGliding(player, gliding);
                     }
                     // Dealing damage to the player as done in vanilla when teleporting.
                     double damage = generalConfigHolder.getPearlDamageSelf();
