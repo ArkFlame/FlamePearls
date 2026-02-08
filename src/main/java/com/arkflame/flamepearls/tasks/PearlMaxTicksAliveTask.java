@@ -11,16 +11,9 @@ import org.bukkit.entity.Projectile;
  * from staying loaded in the world indefinitely.
  */
 public class PearlMaxTicksAliveTask implements Runnable {
-    // Use final fields to ensure dependencies are not changed after initialization.
     private final OriginManager originManager;
     private final GeneralConfigHolder generalConfigHolder;
 
-    /**
-     * Constructs a new PearlMaxTicksAliveTask.
-     *
-     * @param originManager       The manager that tracks thrown pearls.
-     * @param generalConfigHolder The configuration holder to get the max ticks alive value from.
-     */
     public PearlMaxTicksAliveTask(OriginManager originManager, GeneralConfigHolder generalConfigHolder) {
         this.originManager = originManager;
         this.generalConfigHolder = generalConfigHolder;
@@ -28,19 +21,16 @@ public class PearlMaxTicksAliveTask implements Runnable {
 
     @Override
     public void run() {
-        // Get the configured max lifetime from the config.
+        // If the feature is disabled explicitly, do nothing.
+        if (!generalConfigHolder.isMaxTicksAliveEnabled()) {
+            return;
+        }
         int maxTicksAlive = generalConfigHolder.getMaxTicksAlive();
-
-        // If the feature is disabled in the config (value is 0 or less), do nothing.
+        // If the configured max is 0 or less, do nothing.
         if (maxTicksAlive <= 0) {
             return;
         }
-
-        // Get the iterator directly from the manager's projectile collection.
-        // Using an iterator is required to safely remove elements during the loop.
-
         for (Projectile projectile : originManager.getProjectiles()) {
-            // Check if the pearl is dead (e.g., hit a block) or has exceeded its lifetime.
             FoliaAPI.runTaskForEntity(projectile, () -> {
                 if (projectile.isDead() || projectile.getTicksLived() > maxTicksAlive) {
                     projectile.remove();
