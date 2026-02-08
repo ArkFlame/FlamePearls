@@ -71,8 +71,10 @@ public class ProjectileHitListener implements Listener {
                             String template = FlamePearls.getInstance().getConfig()
                                     .getString("messages.teleport-world-switch-blocked",
                                             "&cYou cannot teleport from world {from} to {to}!");
-                            player.sendMessage(ChatColor.translateAlternateColorCodes('&', template
-                                    .replace("{from}", playerWorld.getName()).replace("{to}", world.getName())));
+                            if (template != null && !template.isEmpty()) {
+                                player.sendMessage(ChatColor.translateAlternateColorCodes('&', template
+                                        .replace("{from}", playerWorld.getName()).replace("{to}", world.getName())));
+                            }
                             if (FoliaAPI.isFolia()) {
                                 FoliaAPI.teleportPlayer(player, playerPos, true, 2L);
                             }
@@ -93,7 +95,9 @@ public class ProjectileHitListener implements Listener {
                                                 "&cTeleport blocked: distance &e{distance}&c > &e{limit}");
                                 String filled = template.replace("{distance}", String.valueOf(Math.round(distance)))
                                         .replace("{limit}", String.valueOf(Math.round(maxDistance)));
-                                player.sendMessage(ChatColor.translateAlternateColorCodes('&', filled));
+                                if (template != null && !template.isEmpty()) {
+                                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', filled));
+                                }
                                 if (FoliaAPI.isFolia()) {
                                     FoliaAPI.teleportPlayer(player, playerPos, true, 2L);
                                 }
