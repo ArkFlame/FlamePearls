@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -23,6 +22,10 @@ public class FoliaAPI {
     private static Object globalRegionScheduler = getGlobalRegionScheduler(); // folia global scheduler
     private static Object regionScheduler = getRegionScheduler(); // folia region scheduler
     private static Object asyncScheduler = getAsyncScheduler(); // folia async scheduler
+
+    // FIX 1: cache isFolia() result at init time instead of re-checking every call
+    private static final boolean IS_FOLIA = detectFolia();
+
     static {
         cacheMethods(); // populate cache early
     }
@@ -57,12 +60,34 @@ public class FoliaAPI {
             Method runDelayedMethod = getMethod(regionScheduler.getClass(), "runDelayed", Plugin.class, Location.class, Consumer.class, long.class);
             if (runDelayedMethod != null) cachedMethods.put("regionScheduler.runDelayed", runDelayedMethod);
         }
+
+        // FIX 2: cache entity scheduler methods against the correct scheduler class, not Entity itself.
+        // We look them up by name since we don't have a live instance at static-init time; the
+        // per-entity lookup in runTaskForEntity() will then use these cached entries.
         Method getSchedulerMethod = getMethod(Entity.class, "getScheduler");
-        if (getSchedulerMethod != null) cachedMethods.put("entity.getScheduler", getSchedulerMethod);
-        Method executeEntityMethod = getMethod(Entity.class, "execute", Plugin.class, Runnable.class, Runnable.class, long.class);
-        if (executeEntityMethod != null) cachedMethods.put("entityScheduler.execute", executeEntityMethod);
-        Method runAtFixedRateEntityMethod = getMethod(Entity.class, "runAtFixedRate", Plugin.class, Consumer.class, Runnable.class, long.class, long.class);
-        if (runAtFixedRateEntityMethod != null) cachedMethods.put("entityScheduler.runAtFixedRate", runAtFixedRateEntityMethod);
+        if (getSchedulerMethod != null) {
+            getSchedulerMethod.setAccessible(true);
+            cachedMethods.put("entity.getScheduler", getSchedulerMethod);
+
+            // FIX 3: cache entityScheduler.execute and entityScheduler.runAtFixedRate by resolving
+            // the scheduler class from the method's return type instead of re-doing reflection each call.
+            Class<?> entitySchedulerClass = getSchedulerMethod.getReturnType();
+            if (entitySchedulerClass != null && entitySchedulerClass != void.class) {
+                Method executeEntityMethod = getMethod(entitySchedulerClass, "execute",
+                        Plugin.class, Runnable.class, Runnable.class, long.class);
+                if (executeEntityMethod != null) {
+                    executeEntityMethod.setAccessible(true);
+                    cachedMethods.put("entityScheduler.execute", executeEntityMethod);
+                }
+                Method runAtFixedRateEntityMethod = getMethod(entitySchedulerClass, "runAtFixedRate",
+                        Plugin.class, Consumer.class, Runnable.class, long.class, long.class);
+                if (runAtFixedRateEntityMethod != null) {
+                    runAtFixedRateEntityMethod.setAccessible(true);
+                    cachedMethods.put("entityScheduler.runAtFixedRate", runAtFixedRateEntityMethod);
+                }
+            }
+        }
+
         Method teleportAsyncMethod = getMethod(Player.class, "teleportAsync", Location.class);
         if (teleportAsyncMethod != null) cachedMethods.put("player.teleportAsync", teleportAsyncMethod);
         Method teleportAsyncWithCause = getMethod(Player.class, "teleportAsync", Location.class, TeleportCause.class);
@@ -71,6 +96,15 @@ public class FoliaAPI {
             Method cancelTasksMethod = getMethod(asyncScheduler.getClass(), "cancelTasks", Plugin.class);
             if (cancelTasksMethod != null) cachedMethods.put("asyncScheduler.cancelTasks", cancelTasksMethod);
         }
+
+        // FIX 4: cache the three Server scheduler lookup methods so getGlobalRegionScheduler() etc.
+        // never repeat the same getMethod(Server.class, ...) call at runtime.
+        Method getGlobalMethod = getMethod(Server.class, "getGlobalRegionScheduler");
+        if (getGlobalMethod != null) cachedMethods.put("server.getGlobalRegionScheduler", getGlobalMethod);
+        Method getRegionMethod = getMethod(Server.class, "getRegionScheduler");
+        if (getRegionMethod != null) cachedMethods.put("server.getRegionScheduler", getRegionMethod);
+        Method getAsyncMethod = getMethod(Server.class, "getAsyncScheduler");
+        if (getAsyncMethod != null) cachedMethods.put("server.getAsyncScheduler", getAsyncMethod);
     }
 
     private static Object invokeMethod(Method method, Object object, Object... args) {
@@ -86,6 +120,8 @@ public class FoliaAPI {
     }
 
     private static Object getGlobalRegionScheduler() {
+        // uses getMethod directly here because cacheMethods() hasn't run yet at field-init time;
+        // the result (the scheduler object) is stored in the static field and reused everywhere.
         Method method = getMethod(Server.class, "getGlobalRegionScheduler");
         return invokeMethod(method, Bukkit.getServer());
     }
@@ -100,13 +136,19 @@ public class FoliaAPI {
         return invokeMethod(method, Bukkit.getServer());
     }
 
-    public static boolean isFolia() {
+    // FIX 1 (impl): one-time Folia detection called only from the static field initializer.
+    private static boolean detectFolia() {
         try {
             Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
             return globalRegionScheduler != null && regionScheduler != null;
         } catch (Exception ig) {
             return false;
         }
+    }
+
+    // isFolia() now returns the pre-computed constant — zero overhead per call.
+    public static boolean isFolia() {
+        return IS_FOLIA;
     }
 
     public static void runTaskAsync(Runnable run, long delay) {
@@ -179,6 +221,8 @@ public class FoliaAPI {
         invokeMethod(method, globalRegionScheduler, FlamePearls.getInstance(), run, delay);
     }
 
+    // FIX 2+3: runTaskForEntity() now uses cachedMethods exclusively — no more raw
+    // entity.getClass().getMethod(...) calls on the hot path.
     public static void runTaskForEntity(Entity entity, Runnable run, Runnable retired, long delay) {
         if (entity == null) return; // ignore null entity
         if (!isFolia()) {
@@ -186,22 +230,20 @@ public class FoliaAPI {
             return;
         }
         try {
-            Method getSchedulerMethod = entity.getClass().getMethod("getScheduler"); // get scheduler on entity instance
-            Object entityScheduler = getSchedulerMethod.invoke(entity); // get scheduler instance
-            Method executeMethod = entityScheduler.getClass().getMethod(
-                "execute",
-                org.bukkit.plugin.Plugin.class,
-                Runnable.class,
-                Runnable.class,
-                long.class
-            ); // get execute method
+            Method getSchedulerMethod = cachedMethods.get("entity.getScheduler");
+            if (getSchedulerMethod == null) { run.run(); return; } // failsafe
+            Object entityScheduler = getSchedulerMethod.invoke(entity);
+            if (entityScheduler == null) { run.run(); return; } // failsafe
+
+            Method executeMethod = cachedMethods.get("entityScheduler.execute");
+            if (executeMethod == null) { run.run(); return; } // failsafe
             executeMethod.invoke(
                 entityScheduler,
                 FlamePearls.getInstance(),
                 run,
                 retired,
                 Math.max(1L, delay)
-            ); // invoke with delay
+            );
         } catch (Exception e) {
             e.printStackTrace();
             run.run(); // failsafe run immediately
