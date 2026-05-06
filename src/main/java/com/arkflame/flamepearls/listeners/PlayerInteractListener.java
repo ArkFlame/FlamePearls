@@ -52,6 +52,9 @@ public class PlayerInteractListener implements Listener {
 
             // Check if the player is holding an ender pearl in their main hand
             if (heldItem != null && heldItem.getType() == Material.ENDER_PEARL) {
+                if (!generalConfigHolder.isPearlCooldownEnabled()) {
+                    return;
+                }
                 // Get the cooldown time remaining
                 double cooldown = cooldownManager.getCooldown(player);
                 

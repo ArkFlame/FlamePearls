@@ -33,17 +33,19 @@ pearl-damage-self: 5.0 # 2.5 hearts
 # Damage dealt to other entities hit by the pearl (in half-hearts).
 pearl-damage-other: 2.0 # 1 heart
 
-# The default cooldown in seconds for players without a specific permission.
-pearl-cooldown: 10.0
-
-# Permission-based cooldowns. Players get the LOWEST value they have permission for.
-# The permission node is flamepearls.cooldown.<number>
-# It's best practice to keep this list sorted from lowest to highest.
-pearl-cooldowns-perms:
-  - 1
-  - 2
-  - 3
-  - 5
+cooldown:
+  # Enables plugin cooldown enforcement.
+  enabled: true
+  # The default cooldown in seconds for players without a tier permission.
+  time: 10.0
+  # Permission-based cooldowns. Players get the LOWEST value they have permission for.
+  # The permission node is flamepearls.cooldown.<number>
+  # It's best practice to keep this list sorted from lowest to highest.
+  permission-tiers:
+    - 1
+    - 2
+    - 3
+    - 5
 
 # --- Cosmetics & World Control ---
 

@@ -21,8 +21,11 @@ public class GeneralConfigHolder {
     private static final String NO_DAMAGE_TICKS_PATH = "teleport-no-damage-ticks";
     private static final String PEARL_DAMAGE_SELF_PATH = "pearl-damage-self";
     private static final String PEARL_DAMAGE_OTHER_PATH = "pearl-damage-other";
-    private static final String PEARL_COOLDOWN_PATH = "pearl-cooldown";
-    private static final String PEARL_COOLDOWN_PERMS_PATH = "pearl-cooldowns-perms";
+    private static final String COOLDOWN_ENABLED_PATH = "cooldown.enabled";
+    private static final String COOLDOWN_TIME_PATH = "cooldown.time";
+    private static final String COOLDOWN_PERMISSION_TIERS_PATH = "cooldown.permission-tiers";
+    private static final String LEGACY_PEARL_COOLDOWN_PATH = "pearl-cooldown";
+    private static final String LEGACY_PEARL_COOLDOWN_PERMS_PATH = "pearl-cooldowns-perms";
     private static final String PEARL_SOUND_PATH = "pearl-sound";
     private static final String DISABLED_WORLDS_PATH = "disabled-worlds";
     private static final String MAX_TICKS_ALIVE_PATH = "max-ticks-alive";
@@ -43,6 +46,7 @@ public class GeneralConfigHolder {
     private boolean preventWorldBorderTeleport;
     private boolean preventWorldSwitchTeleport;
     private boolean resetVelocityAfterTeleport;
+    private boolean pearlCooldownEnabled;
 
     private List<Integer> permissionCooldownTiers = Collections.emptyList();
     private List<Sound> pearlSounds = Collections.emptyList();
@@ -61,12 +65,10 @@ public class GeneralConfigHolder {
         noDamageTicksAfterTeleport = config.getInt(NO_DAMAGE_TICKS_PATH, 0);
         pearlDamageSelf = config.getDouble(PEARL_DAMAGE_SELF_PATH, 5.0);
         pearlDamageOther = config.getDouble(PEARL_DAMAGE_OTHER_PATH, 2.0);
-        defaultPearlCooldown = config.getDouble(PEARL_COOLDOWN_PATH, 0.5);
 
-        permissionCooldownTiers = config.getIntegerList(PEARL_COOLDOWN_PERMS_PATH)
-                .stream()
-                .sorted()
-                .collect(Collectors.toList());
+        pearlCooldownEnabled = config.getBoolean(COOLDOWN_ENABLED_PATH, true);
+        defaultPearlCooldown = readCooldownSeconds(config);
+        permissionCooldownTiers = readCooldownTiers(config);
 
         disabledWorlds = new HashSet<>(config.getStringList(DISABLED_WORLDS_PATH));
 
@@ -114,7 +116,34 @@ public class GeneralConfigHolder {
                 .collect(Collectors.toList());
     }
 
+    private double readCooldownSeconds(@NotNull Configuration config) {
+        if (config.contains(COOLDOWN_TIME_PATH)) {
+            return Math.max(0.0D, config.getDouble(COOLDOWN_TIME_PATH, 10.0D));
+        }
+        return Math.max(0.0D, config.getDouble(LEGACY_PEARL_COOLDOWN_PATH, 10.0D));
+    }
+
+    private List<Integer> readCooldownTiers(@NotNull Configuration config) {
+        if (config.isList(COOLDOWN_PERMISSION_TIERS_PATH)) {
+            return config.getIntegerList(COOLDOWN_PERMISSION_TIERS_PATH)
+                    .stream()
+                    .filter(Objects::nonNull)
+                    .filter(tier -> tier >= 0)
+                    .sorted()
+                    .collect(Collectors.toList());
+        }
+        return config.getIntegerList(LEGACY_PEARL_COOLDOWN_PERMS_PATH)
+                .stream()
+                .filter(Objects::nonNull)
+                .filter(tier -> tier >= 0)
+                .sorted()
+                .collect(Collectors.toList());
+    }
+
     public double getPearlCooldown(Player player) {
+        if (!pearlCooldownEnabled) {
+            return 0.0D;
+        }
         if (player == null) {
             return defaultPearlCooldown;
         }
@@ -126,6 +155,10 @@ public class GeneralConfigHolder {
     }
 
     public void updateCooldown(@NotNull Player player) {
+        if (!pearlCooldownEnabled) {
+            playerCooldowns.remove(player.getUniqueId());
+            return;
+        }
         for (int cooldownTier : permissionCooldownTiers) {
             if (player.hasPermission("flamepearls.cooldown." + cooldownTier)) {
                 playerCooldowns.put(player.getUniqueId(), Math.min(defaultPearlCooldown, cooldownTier));

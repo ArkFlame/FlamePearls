@@ -53,7 +53,13 @@ public class PlayerTeleportListener implements Listener {
             if (generalConfigHolder.isWorldDisabled(toWorldName)) {
                 return;
             }
-            
+
+            if (generalConfigHolder.isPreventWorldSwitchTeleport() && isDifferentWorld(from, to)) {
+                event.setCancelled(true);
+                sendWorldSwitchBlocked(event.getPlayer(), from, to);
+                return;
+            }
+
             if (generalConfigHolder.isPreventWorldBorderTeleport() && !isInsideWorldBorder(to)) {
                 event.setCancelled(true);
                 return;
@@ -70,5 +76,33 @@ public class PlayerTeleportListener implements Listener {
         double z = loc.getZ();
         return (x >= centerX - size && x <= centerX + size) &&
                 (z >= centerZ - size && z <= centerZ + size);
+    }
+
+    private boolean isDifferentWorld(Location from, Location to) {
+        World fromWorld = from == null ? null : from.getWorld();
+        World toWorld = to == null ? null : to.getWorld();
+        if (fromWorld == null || toWorld == null) {
+            return true;
+        }
+        return !fromWorld.getName().equals(toWorld.getName());
+    }
+
+    private String getWorldName(Location location) {
+        if (location == null || location.getWorld() == null) {
+            return "unknown";
+        }
+        return location.getWorld().getName();
+    }
+
+    private void sendWorldSwitchBlocked(Player player, Location from, Location to) {
+        if (player == null) {
+            return;
+        }
+        String template = FlamePearls.getInstance().getConfig().getString("messages.teleport-world-switch-blocked", "&cYou cannot teleport from world {from} to {to}!");
+        if (template == null || template.isEmpty()) {
+            return;
+        }
+        String message = template.replace("{from}", getWorldName(from)).replace("{to}", getWorldName(to));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
     }
 }

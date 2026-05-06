@@ -45,12 +45,10 @@ public class ProjectileHitListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onProjectileHit(ProjectileHitEvent event) {
         Projectile projectile = event.getEntity();
-        // Only interested in ender pearls
         if (projectile instanceof EnderPearl) {
             ProjectileSource shooter = projectile.getShooter();
             if (shooter instanceof Player) {
                 Player player = (Player) shooter;
-                // Retrieve the origin of the throw
                 Location origin = originManager.getOriginAndRemove(projectile);
                 if (origin != null) {
                     Location location = projectile.getLocation();
@@ -59,28 +57,15 @@ public class ProjectileHitListener implements Listener {
                         return;
                     }
                     Collection<String> disabledWorlds = generalConfigHolder.getDisabledWorlds();
-                    // Skip disabled worlds
                     if (disabledWorlds.contains(world.getName())) {
                         return;
                     }
                     Location playerPos = player.getLocation();
                     World playerWorld = playerPos.getWorld();
-                    // If world-switching with pearls is prevented, cancel if different world
-                    if (generalConfigHolder.isPreventWorldSwitchTeleport()) {
-                        if (playerWorld == null || !playerWorld.getName().equals(world.getName())) {
-                            String template = FlamePearls.getInstance().getConfig()
-                                    .getString("messages.teleport-world-switch-blocked",
-                                            "&cYou cannot teleport from world {from} to {to}!");
-                            if (template != null && !template.isEmpty()) {
-                                player.sendMessage(ChatColor.translateAlternateColorCodes('&', template
-                                        .replace("{from}", playerWorld.getName()).replace("{to}", world.getName())));
-                            }
-                            if (FoliaAPI.isFolia()) {
-                                FoliaAPI.teleportPlayer(player, playerPos, true, 2L);
-                            }
-                            event.setCancelled(true);
-                            return;
-                        }
+                    if (generalConfigHolder.isPreventWorldSwitchTeleport() && isDifferentWorld(origin, location)) {
+                        sendWorldSwitchBlocked(player, origin, location);
+                        event.setCancelled(true);
+                        return;
                     }
 
                     FileConfiguration config = FlamePearls.getInstance().getConfig();
@@ -89,7 +74,6 @@ public class ProjectileHitListener implements Listener {
                         if (playerWorld != null && world != null && playerWorld.getName().equals(world.getName())) {
                             double distance = playerPos.distance(location);
                             if (distance > maxDistance) {
-                                // Build and send configured distance-exceeded message
                                 String template = config
                                         .getString("messages.teleport-distance-exceeded",
                                                 "&cTeleport blocked: distance &e{distance}&c > &e{limit}");
@@ -107,12 +91,15 @@ public class ProjectileHitListener implements Listener {
                         }
                     }
 
-                    // Find the safe target location
                     Location safeLocation = LocationUtil.findSafeLocation(player, location, origin, world);
                     if (safeLocation == null) {
                         return;
                     }
-                    // Proceed with teleport and effects
+                    if (generalConfigHolder.isPreventWorldSwitchTeleport() && isDifferentWorld(origin, safeLocation)) {
+                        sendWorldSwitchBlocked(player, origin, safeLocation);
+                        event.setCancelled(true);
+                        return;
+                    }
                     teleportDataManager.add(player);
                     Vector originalVelocityLocation = player.getVelocity();
                     boolean gliding = Players.isGliding(player);
@@ -151,5 +138,34 @@ public class ProjectileHitListener implements Listener {
                 }
             }
         }
+    }
+
+    private boolean isDifferentWorld(Location from, Location to) {
+        World fromWorld = from == null ? null : from.getWorld();
+        World toWorld = to == null ? null : to.getWorld();
+        if (fromWorld == null || toWorld == null) {
+            return true;
+        }
+        return !fromWorld.getName().equals(toWorld.getName());
+    }
+
+    private String getWorldName(Location location) {
+        if (location == null || location.getWorld() == null) {
+            return "unknown";
+        }
+        return location.getWorld().getName();
+    }
+
+    private void sendWorldSwitchBlocked(Player player, Location from, Location to) {
+        if (player == null) {
+            return;
+        }
+        String template = FlamePearls.getInstance().getConfig().getString("messages.teleport-world-switch-blocked",
+                "&cYou cannot teleport from world {from} to {to}!");
+        if (template == null || template.isEmpty()) {
+            return;
+        }
+        String message = template.replace("{from}", getWorldName(from)).replace("{to}", getWorldName(to));
+        player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
     }
 }

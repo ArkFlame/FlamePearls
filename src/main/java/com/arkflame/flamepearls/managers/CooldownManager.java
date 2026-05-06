@@ -14,19 +14,33 @@ public class CooldownManager {
     private Map<Player, Long> lastPearlThrows = new ConcurrentHashMap<>();
 
     public void updateLastPearl(Player player) {
+        if (player == null) {
+            return;
+        }
+        if (!FlamePearls.getInstance().getGeneralConfigHolder().isPearlCooldownEnabled()) {
+            return;
+        }
         lastPearlThrows.put(player, System.currentTimeMillis());
     }
 
     public double getCooldown(Player player) {
-        // Get the time passed since last pearl in milliseconds
+        if (player == null) {
+            return 0.0D;
+        }
+        GeneralConfigHolder config = FlamePearls.getInstance().getGeneralConfigHolder();
+        if (!config.isPearlCooldownEnabled()) {
+            return 0.0D;
+        }
         long timeSinceLastPearl = System.currentTimeMillis() - lastPearlThrows.getOrDefault(player, 0L);
-        double cooldown = FlamePearls.getInstance().getGeneralConfigHolder().getPearlCooldown(player) * 1000D;
+        double cooldown = config.getPearlCooldown(player) * 1000D;
 
-        // Return the cooldown minus the time passed and convert to seconds
         return (cooldown - Math.min(cooldown, timeSinceLastPearl)) / 1000D;
     }
 
     public void resetCooldown(Player player) {
+        if (player == null) {
+            return;
+        }
         lastPearlThrows.remove(player);
     }
 
