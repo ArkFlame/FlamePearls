@@ -1,108 +1,58 @@
 package com.arkflame.flamepearls.listeners;
 
-import com.arkflame.flamepearls.FlamePearls;
 import com.arkflame.flamepearls.config.GeneralConfigHolder;
+import com.arkflame.flamepearls.config.MessagesConfigHolder;
 import com.arkflame.flamepearls.managers.OriginManager;
-import com.arkflame.flamepearls.utils.FoliaAPI;
-import org.bukkit.Bukkit;
+import com.arkflame.flamepearls.utils.MessageUtil;
+import com.arkflame.flamepearls.utils.WorldUtil;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.WorldBorder;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
-import org.bukkit.ChatColor;
 
-/**
- * Instantiates a mirrored approach of PlayerTeleportEvent handling for ender
- * pearls.
- * - On non-Folia servers: handles the actual PlayerTeleportEvent.
- * - On Folia: emulates the same intent using a periodic scheduler
- * by finalizing pending pearl teleports (setAsTeleported) on the player's
- * entity thread.
- */
 public class PlayerTeleportListener implements Listener {
     private final OriginManager originManager;
     private final GeneralConfigHolder generalConfigHolder;
+    private final MessagesConfigHolder messagesConfigHolder;
 
-    public PlayerTeleportListener(OriginManager originManager, GeneralConfigHolder generalConfigHolder) {
+    public PlayerTeleportListener(final OriginManager originManager,
+                                  final GeneralConfigHolder generalConfigHolder,
+                                  final MessagesConfigHolder messagesConfigHolder) {
         this.originManager = originManager;
         this.generalConfigHolder = generalConfigHolder;
+        this.messagesConfigHolder = messagesConfigHolder;
     }
 
     @EventHandler(ignoreCancelled = true)
-    public void onPlayerTeleport(PlayerTeleportEvent event) {
-        // Only process on non-Folia; Folia emulates with ProjectileHitListener
-        if (FoliaAPI.isFolia()) {
+    public void onPlayerTeleport(final PlayerTeleportEvent event) {
+        if (event.getCause() != TeleportCause.ENDER_PEARL) {
             return;
         }
-        if (event.getCause() == TeleportCause.ENDER_PEARL) {
-            Location to = event.getTo();
-            Location from = event.getFrom();
-            if (to == null || from == null) {
-                return;
-            }
-            World toWorld = to.getWorld();
-            if (toWorld == null) {
-                return;
-            }
-            String toWorldName = toWorld.getName();
-            if (generalConfigHolder.isWorldDisabled(toWorldName)) {
-                return;
-            }
 
-            if (generalConfigHolder.isPreventWorldSwitchTeleport() && isDifferentWorld(from, to)) {
-                event.setCancelled(true);
-                sendWorldSwitchBlocked(event.getPlayer(), from, to);
-                return;
-            }
-
-            if (generalConfigHolder.isPreventWorldBorderTeleport() && !isInsideWorldBorder(to)) {
-                event.setCancelled(true);
-                return;
-            }
-        }
-    }
-
-    private boolean isInsideWorldBorder(Location loc) {
-        WorldBorder border = loc.getWorld().getWorldBorder();
-        double size = border.getSize() / 2.0;
-        double centerX = border.getCenter().getX();
-        double centerZ = border.getCenter().getZ();
-        double x = loc.getX();
-        double z = loc.getZ();
-        return (x >= centerX - size && x <= centerX + size) &&
-                (z >= centerZ - size && z <= centerZ + size);
-    }
-
-    private boolean isDifferentWorld(Location from, Location to) {
-        World fromWorld = from == null ? null : from.getWorld();
-        World toWorld = to == null ? null : to.getWorld();
-        if (fromWorld == null || toWorld == null) {
-            return true;
-        }
-        return !fromWorld.getName().equals(toWorld.getName());
-    }
-
-    private String getWorldName(Location location) {
-        if (location == null || location.getWorld() == null) {
-            return "unknown";
-        }
-        return location.getWorld().getName();
-    }
-
-    private void sendWorldSwitchBlocked(Player player, Location from, Location to) {
-        if (player == null) {
+        final Location from = event.getFrom();
+        final Location to = event.getTo();
+        if (to == null) {
             return;
         }
-        String template = FlamePearls.getInstance().getConfig().getString("messages.teleport-world-switch-blocked", "&cYou cannot teleport from world {from} to {to}!");
-        if (template == null || template.isEmpty()) {
+
+        final World toWorld = to.getWorld();
+        if (toWorld == null || generalConfigHolder.isWorldDisabled(toWorld.getName())) {
             return;
         }
-        String message = template.replace("{from}", getWorldName(from)).replace("{to}", getWorldName(to));
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
+
+        final Player player = event.getPlayer();
+        if (generalConfigHolder.isPreventWorldSwitchTeleport() && WorldUtil.isDifferentWorld(from, to)) {
+            originManager.markBlockedWorldSwitch(player, from, to);
+            event.setCancelled(true);
+            MessageUtil.sendWorldSwitchBlocked(player, messagesConfigHolder, from, to);
+            return;
+        }
+
+        if (generalConfigHolder.isPreventWorldBorderTeleport() && !WorldUtil.isInsideWorldBorder(to)) {
+            event.setCancelled(true);
+        }
     }
 }

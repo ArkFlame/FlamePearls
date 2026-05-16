@@ -1,6 +1,7 @@
 package com.arkflame.flamepearls.config;
 
 import com.arkflame.flamepearls.FlamePearls;
+import com.arkflame.flamepearls.utils.Sounds;
 import lombok.AccessLevel;
 import lombok.Getter;
 import org.bukkit.Sound;
@@ -80,7 +81,7 @@ public class GeneralConfigHolder {
 
         // Load world-border and world-switch prevention options.
         preventWorldBorderTeleport = config.getBoolean(PREVENT_WORLD_BORDER_TELEPORT, true);
-        preventWorldSwitchTeleport = config.getBoolean(PREVENT_WORLD_SWITCH_TELEPORT_PATH, false);
+        preventWorldSwitchTeleport = config.getBoolean(PREVENT_WORLD_SWITCH_TELEPORT_PATH, true);
 
         // Load teleport distance limit.
         maxTeleportDistance = config.getDouble(MAX_TELEPORT_DISTANCE_PATH, 500.0);
@@ -89,7 +90,7 @@ public class GeneralConfigHolder {
     }
 
     private List<Sound> loadSounds(@NotNull Configuration config, @NotNull String path) {
-        List<String> soundNames;
+        final List<String> soundNames;
 
         if (config.isString(path)) {
             soundNames = Collections.singletonList(config.getString(path));
@@ -99,17 +100,16 @@ public class GeneralConfigHolder {
             return Collections.emptyList();
         }
 
-        Logger logger = FlamePearls.getInstance().getLogger();
+        final Logger logger = FlamePearls.getInstance().getLogger();
 
         return soundNames.stream()
                 .filter(name -> name != null && !name.isEmpty())
                 .map(name -> {
-                    try {
-                        return Optional.of(Sound.valueOf(name.toUpperCase(Locale.ROOT)));
-                    } catch (IllegalArgumentException e) {
+                    final Optional<Sound> sound = Sounds.findFirstValid(Collections.singletonList(name));
+                    if (!sound.isPresent()) {
                         logger.warning("Invalid sound name in config.yml at path '" + path + "': " + name);
-                        return Optional.<Sound>empty();
                     }
+                    return sound;
                 })
                 .filter(Optional::isPresent)
                 .map(Optional::get)

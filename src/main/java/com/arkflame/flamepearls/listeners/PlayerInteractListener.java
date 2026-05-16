@@ -1,11 +1,10 @@
 package com.arkflame.flamepearls.listeners;
 
 import java.text.DecimalFormat;
-import java.util.Collection;
 
 import com.arkflame.flamepearls.utils.MessageUtil;
+import com.arkflame.flamepearls.utils.WorldUtil;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -35,12 +34,7 @@ public class PlayerInteractListener implements Listener {
         if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
             // Get the player who interacted
             Player player = event.getPlayer();
-            // Get the world
-            World world = player.getLocation().getWorld();
-            // Get disabled worlds
-            Collection<String> disabledWorlds = generalConfigHolder.getDisabledWorlds();
-            // This world is disabled
-            if (disabledWorlds.contains(world.getName())) {
+            if (generalConfigHolder.isWorldDisabled(WorldUtil.getWorldName(player.getLocation()))) {
                 return;
             }
 

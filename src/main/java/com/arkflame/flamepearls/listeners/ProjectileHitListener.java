@@ -1,10 +1,17 @@
 package com.arkflame.flamepearls.listeners;
 
+import com.arkflame.flamepearls.FlamePearls;
+import com.arkflame.flamepearls.config.GeneralConfigHolder;
+import com.arkflame.flamepearls.config.MessagesConfigHolder;
+import com.arkflame.flamepearls.managers.OriginManager;
 import com.arkflame.flamepearls.managers.TeleportDataManager;
-
-import java.util.Collection;
-
 import com.arkflame.flamepearls.utils.FoliaAPI;
+import com.arkflame.flamepearls.utils.LocationUtil;
+import com.arkflame.flamepearls.utils.MessageUtil;
+import com.arkflame.flamepearls.utils.Players;
+import com.arkflame.flamepearls.utils.Sounds;
+import com.arkflame.flamepearls.utils.WorldUtil;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -19,153 +26,135 @@ import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.util.Vector;
 
-import com.arkflame.flamepearls.FlamePearls;
-import com.arkflame.flamepearls.config.GeneralConfigHolder;
-import com.arkflame.flamepearls.managers.OriginManager;
-import com.arkflame.flamepearls.utils.LocationUtil;
-import com.arkflame.flamepearls.utils.Players;
-import com.arkflame.flamepearls.utils.Sounds;
-
-import org.bukkit.ChatColor;
-
 public class ProjectileHitListener implements Listener {
-    private OriginManager originManager;
-    private TeleportDataManager teleportDataManager;
-    private GeneralConfigHolder generalConfigHolder;
-    private double endermiteChance;
+    private final OriginManager originManager;
+    private final TeleportDataManager teleportDataManager;
+    private final GeneralConfigHolder generalConfigHolder;
+    private final MessagesConfigHolder messagesConfigHolder;
+    private final double endermiteChance;
 
-    public ProjectileHitListener(TeleportDataManager teleportDataManager, OriginManager originManager,
-            GeneralConfigHolder generalConfigHolder) {
+    public ProjectileHitListener(final TeleportDataManager teleportDataManager,
+                                 final OriginManager originManager,
+                                 final GeneralConfigHolder generalConfigHolder,
+                                 final MessagesConfigHolder messagesConfigHolder) {
         this.originManager = originManager;
         this.teleportDataManager = teleportDataManager;
         this.generalConfigHolder = generalConfigHolder;
+        this.messagesConfigHolder = messagesConfigHolder;
         this.endermiteChance = generalConfigHolder.getEndermiteChance();
     }
 
     @EventHandler(ignoreCancelled = true)
-    public void onProjectileHit(ProjectileHitEvent event) {
-        Projectile projectile = event.getEntity();
-        if (projectile instanceof EnderPearl) {
-            ProjectileSource shooter = projectile.getShooter();
-            if (shooter instanceof Player) {
-                Player player = (Player) shooter;
-                Location origin = originManager.getOriginAndRemove(projectile);
-                if (origin != null) {
-                    Location location = projectile.getLocation();
-                    World world = location.getWorld();
-                    if (world == null) {
-                        return;
-                    }
-                    Collection<String> disabledWorlds = generalConfigHolder.getDisabledWorlds();
-                    if (disabledWorlds.contains(world.getName())) {
-                        return;
-                    }
-                    Location playerPos = player.getLocation();
-                    World playerWorld = playerPos.getWorld();
-                    if (generalConfigHolder.isPreventWorldSwitchTeleport() && isDifferentWorld(origin, location)) {
-                        sendWorldSwitchBlocked(player, origin, location);
-                        event.setCancelled(true);
-                        return;
-                    }
+    public void onProjectileHit(final ProjectileHitEvent event) {
+        final Projectile projectile = event.getEntity();
+        if (!(projectile instanceof EnderPearl)) {
+            return;
+        }
 
-                    FileConfiguration config = FlamePearls.getInstance().getConfig();
-                    double maxDistance = generalConfigHolder.getMaxTeleportDistance();
-                    if (maxDistance > 0) {
-                        if (playerWorld != null && world != null && playerWorld.getName().equals(world.getName())) {
-                            double distance = playerPos.distance(location);
-                            if (distance > maxDistance) {
-                                String template = config
-                                        .getString("messages.teleport-distance-exceeded",
-                                                "&cTeleport blocked: distance &e{distance}&c > &e{limit}");
-                                String filled = template.replace("{distance}", String.valueOf(Math.round(distance)))
-                                        .replace("{limit}", String.valueOf(Math.round(maxDistance)));
-                                if (template != null && !template.isEmpty()) {
-                                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', filled));
-                                }
-                                if (FoliaAPI.isFolia()) {
-                                    FoliaAPI.teleportPlayer(player, playerPos, true, 2L);
-                                }
-                                event.setCancelled(true);
-                                return;
-                            }
-                        }
-                    }
+        final ProjectileSource shooter = projectile.getShooter();
+        if (!(shooter instanceof Player)) {
+            return;
+        }
 
-                    Location safeLocation = LocationUtil.findSafeLocation(player, location, origin, world);
-                    if (safeLocation == null) {
-                        return;
-                    }
-                    if (generalConfigHolder.isPreventWorldSwitchTeleport() && isDifferentWorld(origin, safeLocation)) {
-                        sendWorldSwitchBlocked(player, origin, safeLocation);
-                        event.setCancelled(true);
-                        return;
-                    }
-                    teleportDataManager.add(player);
-                    Vector originalVelocityLocation = player.getVelocity();
-                    boolean gliding = Players.isGliding(player);
-                    Vector dir = player.getLocation().getDirection();
-                    FoliaAPI.teleportPlayer(player, safeLocation.setDirection(dir),
-                            TeleportCause.ENDER_PEARL, FoliaAPI.isFolia() ? 2L : 0L);
-                    if (!generalConfigHolder.isResetVelocityAfterTeleport()) {
-                        player.setVelocity(originalVelocityLocation);
-                    }
-                    if (generalConfigHolder.isResetFallDamageAfterTeleport()) {
-                        player.setFallDistance(0);
-                        Players.setGliding(player, gliding);
-                    }
-                    double damage = generalConfigHolder.getPearlDamageSelf();
-                    if (damage >= 0) {
-                        player.damage(damage, projectile);
-                    }
-                    if (endermiteChance > Math.random()) {
-                        final Location spawnLoc = projectile.getLocation();
-                        if (!FoliaAPI.isFolia()) {
-                            FoliaAPI.runTaskForEntity(
-                                    projectile, () -> {
-                                        World spawnWorld = spawnLoc.getWorld();
-                                        if (spawnWorld != null) {
-                                            spawnWorld.spawnEntity(spawnLoc, EntityType.ENDERMITE);
-                                        }
-                                    }, () -> {
-                                    }, 1L);
-                        }
-                    }
-                    Sounds.play(player.getLocation(), 1.0f, 1.0f, generalConfigHolder.getPearlSounds());
-                    event.setCancelled(false);
-                } else {
-                    FlamePearls.getInstance().getLogger().severe(
-                            "Error while teleporting player with enderpearl. Origin should not be null. ¿Caused by another plugin?");
+        final Player player = (Player) shooter;
+        final Location origin = originManager.getOriginAndRemove(projectile);
+        if (origin == null) {
+            FlamePearls.getInstance().getLogger().severe(
+                    "Error while teleporting player with enderpearl. Origin should not be null. Caused by another plugin?"
+            );
+            return;
+        }
+
+        final Location location = projectile.getLocation();
+        final World world = location.getWorld();
+        if (world == null || generalConfigHolder.isWorldDisabled(world.getName())) {
+            return;
+        }
+
+        final Location playerPos = player.getLocation();
+        final World playerWorld = playerPos.getWorld();
+
+        if (generalConfigHolder.isPreventWorldSwitchTeleport() && WorldUtil.isDifferentWorld(origin, location)) {
+            originManager.markBlockedWorldSwitch(player, origin, location);
+            MessageUtil.sendWorldSwitchBlocked(player, messagesConfigHolder, origin, location);
+            event.setCancelled(true);
+            return;
+        }
+
+        final FileConfiguration config = FlamePearls.getInstance().getConfig();
+        final double maxDistance = generalConfigHolder.getMaxTeleportDistance();
+        if (maxDistance > 0.0D && playerWorld != null && WorldUtil.isSameWorld(playerWorld, world)) {
+            final double distance = playerPos.distance(location);
+            if (distance > maxDistance) {
+                final String template = config.getString(
+                        "messages.teleport-distance-exceeded",
+                        "&cTeleport blocked: distance &e{distance}&c > &e{limit}"
+                );
+                if (template != null && !template.isEmpty()) {
+                    final String filled = template
+                            .replace("{distance}", String.valueOf(Math.round(distance)))
+                            .replace("{limit}", String.valueOf(Math.round(maxDistance)));
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', filled));
                 }
+                if (FoliaAPI.isFolia()) {
+                    FoliaAPI.teleportPlayer(player, playerPos, true, 2L);
+                }
+                event.setCancelled(true);
+                return;
             }
         }
-    }
 
-    private boolean isDifferentWorld(Location from, Location to) {
-        World fromWorld = from == null ? null : from.getWorld();
-        World toWorld = to == null ? null : to.getWorld();
-        if (fromWorld == null || toWorld == null) {
-            return true;
-        }
-        return !fromWorld.getName().equals(toWorld.getName());
-    }
-
-    private String getWorldName(Location location) {
-        if (location == null || location.getWorld() == null) {
-            return "unknown";
-        }
-        return location.getWorld().getName();
-    }
-
-    private void sendWorldSwitchBlocked(Player player, Location from, Location to) {
-        if (player == null) {
+        final Location safeLocation = LocationUtil.findSafeLocation(player, location, origin, world);
+        if (safeLocation == null) {
             return;
         }
-        String template = FlamePearls.getInstance().getConfig().getString("messages.teleport-world-switch-blocked",
-                "&cYou cannot teleport from world {from} to {to}!");
-        if (template == null || template.isEmpty()) {
+
+        if (generalConfigHolder.isPreventWorldSwitchTeleport() && WorldUtil.isDifferentWorld(origin, safeLocation)) {
+            originManager.markBlockedWorldSwitch(player, origin, safeLocation);
+            MessageUtil.sendWorldSwitchBlocked(player, messagesConfigHolder, origin, safeLocation);
+            event.setCancelled(true);
             return;
         }
-        String message = template.replace("{from}", getWorldName(from)).replace("{to}", getWorldName(to));
-        player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
+
+        teleportDataManager.add(player);
+        final Vector originalVelocityLocation = player.getVelocity();
+        final boolean gliding = Players.isGliding(player);
+        final Vector direction = player.getLocation().getDirection();
+
+        FoliaAPI.teleportPlayer(
+                player,
+                safeLocation.setDirection(direction),
+                TeleportCause.ENDER_PEARL,
+                FoliaAPI.isFolia() ? 2L : 0L
+        );
+
+        if (!generalConfigHolder.isResetVelocityAfterTeleport()) {
+            player.setVelocity(originalVelocityLocation);
+        }
+        if (generalConfigHolder.isResetFallDamageAfterTeleport()) {
+            player.setFallDistance(0.0F);
+            Players.setGliding(player, gliding);
+        }
+
+        final double damage = generalConfigHolder.getPearlDamageSelf();
+        if (damage >= 0.0D) {
+            player.damage(damage, projectile);
+        }
+
+        if (endermiteChance > Math.random()) {
+            final Location spawnLoc = projectile.getLocation();
+            if (!FoliaAPI.isFolia()) {
+                FoliaAPI.runTaskForEntity(projectile, () -> {
+                    final World spawnWorld = spawnLoc.getWorld();
+                    if (spawnWorld != null) {
+                        spawnWorld.spawnEntity(spawnLoc, EntityType.ENDERMITE);
+                    }
+                }, () -> {
+                }, 1L);
+            }
+        }
+
+        Sounds.play(player.getLocation(), 1.0F, 1.0F, generalConfigHolder.getPearlSounds());
+        event.setCancelled(false);
     }
 }

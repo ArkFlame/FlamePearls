@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -74,7 +75,7 @@ public final class Sounds {
                 continue;
             }
             try {
-                return Optional.of(Sound.valueOf(name.toUpperCase()));
+                return Optional.of(Sound.valueOf(name.toUpperCase(Locale.ROOT)));
             } catch (IllegalArgumentException ignored) {
                 // This name is not valid for the current server version, try the next one.
             }
