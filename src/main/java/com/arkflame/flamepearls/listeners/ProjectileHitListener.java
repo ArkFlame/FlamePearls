@@ -1,45 +1,29 @@
 package com.arkflame.flamepearls.listeners;
 
 import com.arkflame.flamepearls.FlamePearls;
-import com.arkflame.flamepearls.config.GeneralConfigHolder;
-import com.arkflame.flamepearls.config.MessagesConfigHolder;
 import com.arkflame.flamepearls.managers.OriginManager;
-import com.arkflame.flamepearls.managers.TeleportDataManager;
+import com.arkflame.flamepearls.services.PearlTeleportOutcome;
+import com.arkflame.flamepearls.services.PearlTeleportService;
 import com.arkflame.flamepearls.utils.FoliaAPI;
-import com.arkflame.flamepearls.utils.LocationUtil;
-import com.arkflame.flamepearls.utils.MessageUtil;
-import com.arkflame.flamepearls.utils.Players;
-import com.arkflame.flamepearls.utils.Sounds;
-import com.arkflame.flamepearls.utils.WorldUtil;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
-import org.bukkit.World;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EnderPearl;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ProjectileHitEvent;
-import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.projectiles.ProjectileSource;
-import org.bukkit.util.Vector;
 
-public class ProjectileHitListener implements Listener {
+import java.util.Objects;
+
+public final class ProjectileHitListener implements Listener {
+    private final PearlTeleportService pearlTeleportService;
     private final OriginManager originManager;
-    private final TeleportDataManager teleportDataManager;
-    private final GeneralConfigHolder generalConfigHolder;
-    private final MessagesConfigHolder messagesConfigHolder;
 
-    public ProjectileHitListener(final TeleportDataManager teleportDataManager,
-                                 final OriginManager originManager,
-                                 final GeneralConfigHolder generalConfigHolder,
-                                 final MessagesConfigHolder messagesConfigHolder) {
-        this.originManager = originManager;
-        this.teleportDataManager = teleportDataManager;
-        this.generalConfigHolder = generalConfigHolder;
-        this.messagesConfigHolder = messagesConfigHolder;
+    public ProjectileHitListener(final PearlTeleportService pearlTeleportService,
+                                 final OriginManager originManager) {
+        this.pearlTeleportService = Objects.requireNonNull(pearlTeleportService, "pearlTeleportService");
+        this.originManager = Objects.requireNonNull(originManager, "originManager");
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -54,7 +38,10 @@ public class ProjectileHitListener implements Listener {
             return;
         }
 
-        final Player player = (Player) shooter;
+        if (FoliaAPI.isFolia()) {
+            return;
+        }
+
         final Location origin = originManager.getOriginAndRemove(projectile);
         if (origin == null) {
             FlamePearls.getInstance().getLogger().severe(
@@ -63,93 +50,18 @@ public class ProjectileHitListener implements Listener {
             return;
         }
 
-        final Location location = projectile.getLocation();
-        final World world = location.getWorld();
-        if (world == null || generalConfigHolder.isWorldDisabled(world.getName())) {
-            return;
-        }
-
-        final Location playerPos = player.getLocation();
-        final World playerWorld = playerPos.getWorld();
-
-        if (generalConfigHolder.isPreventWorldSwitchTeleport() && WorldUtil.isDifferentWorld(origin, location)) {
-            originManager.markBlockedWorldSwitch(player, origin, location);
-            MessageUtil.sendWorldSwitchBlocked(player, messagesConfigHolder, origin, location);
-            event.setCancelled(true);
-            return;
-        }
-
-        final FileConfiguration config = FlamePearls.getInstance().getConfig();
-        final double maxDistance = generalConfigHolder.getMaxTeleportDistance();
-        if (maxDistance > 0.0D && playerWorld != null && WorldUtil.isSameWorld(playerWorld, world)) {
-            final double distance = playerPos.distance(location);
-            if (distance > maxDistance) {
-                final String template = config.getString(
-                        "messages.teleport-distance-exceeded",
-                        "&cTeleport blocked: distance &e{distance}&c > &e{limit}"
-                );
-                if (template != null && !template.isEmpty()) {
-                    final String filled = template
-                            .replace("{distance}", String.valueOf(Math.round(distance)))
-                            .replace("{limit}", String.valueOf(Math.round(maxDistance)));
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', filled));
-                }
-                if (FoliaAPI.isFolia()) {
-                    FoliaAPI.teleportPlayer(player, playerPos, true, 2L);
-                }
-                event.setCancelled(true);
-                return;
-            }
-        }
-
-        final Location safeLocation = LocationUtil.findSafeLocation(player, location, origin, world);
-        if (safeLocation == null) {
-            return;
-        }
-
-        if (generalConfigHolder.isPreventWorldSwitchTeleport() && WorldUtil.isDifferentWorld(origin, safeLocation)) {
-            originManager.markBlockedWorldSwitch(player, origin, safeLocation);
-            MessageUtil.sendWorldSwitchBlocked(player, messagesConfigHolder, origin, safeLocation);
-            event.setCancelled(true);
-            return;
-        }
-
-        teleportDataManager.add(player);
-        final Vector originalVelocityLocation = player.getVelocity();
-        final boolean gliding = Players.isGliding(player);
-        final Vector direction = player.getLocation().getDirection();
-
-        FoliaAPI.teleportPlayer(
-                player,
-                safeLocation.setDirection(direction),
-                TeleportCause.ENDER_PEARL,
-                FoliaAPI.isFolia() ? 2L : 0L
+        final PearlTeleportOutcome outcome = pearlTeleportService.handleImpact(
+                (Player) shooter,
+                projectile,
+                origin,
+                projectile.getLocation(),
+                false
         );
 
-        if (!generalConfigHolder.isResetVelocityAfterTeleport()) {
-            player.setVelocity(originalVelocityLocation);
+        if (outcome == PearlTeleportOutcome.BLOCKED) {
+            event.setCancelled(true);
+        } else if (outcome == PearlTeleportOutcome.TELEPORTED) {
+            event.setCancelled(false);
         }
-        if (generalConfigHolder.isResetFallDamageAfterTeleport()) {
-            player.setFallDistance(0.0F);
-            Players.setGliding(player, gliding);
-        }
-
-        final double damage = generalConfigHolder.getPearlDamageSelf();
-        if (damage >= 0.0D) {
-            player.damage(damage, projectile);
-        }
-
-        if (generalConfigHolder.isEndermitesEnabled() && generalConfigHolder.getEndermiteChance() > Math.random()) {
-            final Location spawnLoc = projectile.getLocation().clone();
-            FoliaAPI.runTaskForRegion(spawnLoc, () -> {
-                final World spawnWorld = spawnLoc.getWorld();
-                if (spawnWorld != null) {
-                    spawnWorld.spawnEntity(spawnLoc, EntityType.ENDERMITE);
-                }
-            });
-        }
-
-        Sounds.play(player.getLocation(), 1.0F, 1.0F, generalConfigHolder.getPearlSounds());
-        event.setCancelled(false);
     }
 }

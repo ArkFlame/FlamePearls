@@ -8,6 +8,7 @@ import com.arkflame.flamepearls.listeners.*;
 import com.arkflame.flamepearls.managers.CooldownManager;
 import com.arkflame.flamepearls.managers.OriginManager;
 import com.arkflame.flamepearls.managers.TeleportDataManager;
+import com.arkflame.flamepearls.services.PearlTeleportService;
 import com.arkflame.flamepearls.tasks.PearlMaxTicksAliveTask;
 import com.arkflame.flamepearls.utils.FoliaAPI;
 
@@ -38,6 +39,9 @@ public class FlamePearls extends JavaPlugin {
     // Hooks
     private FlamePearlsPlaceholderHook placeholderHook;
 
+    // Services
+    private PearlTeleportService pearlTeleportService;
+
     @Override
     public void onLoad() {
         // Set the static instance safely and early in the plugin lifecycle.
@@ -49,11 +53,12 @@ public class FlamePearls extends JavaPlugin {
         getLogger().info("Enabling FlamePearls...");
 
         reloadConfigurations();
+        initializeServices();
         registerListeners();
         registerCommands();
         registerHooks();
 
-        PearlMaxTicksAliveTask pearlMaxTicksAliveTask = new PearlMaxTicksAliveTask(originManager, generalConfigHolder);
+        final PearlMaxTicksAliveTask pearlMaxTicksAliveTask = new PearlMaxTicksAliveTask(originManager, generalConfigHolder);
         FoliaAPI.runTaskTimer(obj -> pearlMaxTicksAliveTask.run(), 20L, 20L);
 
         getLogger().info("FlamePearls has been enabled successfully.");
@@ -61,6 +66,7 @@ public class FlamePearls extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        FoliaAPI.cancelAllTasks();
         if (placeholderHook != null && placeholderHook.isRegistered()) {
             placeholderHook.unregister();
             getLogger().info("Unregistered PlaceholderAPI hook.");
@@ -81,6 +87,18 @@ public class FlamePearls extends JavaPlugin {
     }
 
     /**
+     * Initializes the cross-listener services used by event and Folia pre-collision paths.
+     */
+    private void initializeServices() {
+        pearlTeleportService = new PearlTeleportService(
+                teleportDataManager,
+                originManager,
+                generalConfigHolder,
+                messagesConfigHolder
+        );
+    }
+
+    /**
      * Initializes and registers all Bukkit event listeners.
      */
     private void registerListeners() {
@@ -92,9 +110,9 @@ public class FlamePearls extends JavaPlugin {
         pluginManager.registerEvents(new PlayerJoinListener(), this);
         pluginManager.registerEvents(new PlayerQuitListener(teleportDataManager, cooldownManager), this);
         pluginManager.registerEvents(new PlayerTeleportListener(originManager, generalConfigHolder, messagesConfigHolder), this);
-        pluginManager.registerEvents(new ProjectileHitListener(teleportDataManager, originManager, generalConfigHolder, messagesConfigHolder), this);
+        pluginManager.registerEvents(new ProjectileHitListener(pearlTeleportService, originManager), this);
         pluginManager.registerEvents(new PlayerChangedWorldListener(originManager), this);
-        pluginManager.registerEvents(new ProjectileLaunchListener(originManager), this);
+        pluginManager.registerEvents(new ProjectileLaunchListener(originManager, generalConfigHolder, pearlTeleportService), this);
     }
 
     /**

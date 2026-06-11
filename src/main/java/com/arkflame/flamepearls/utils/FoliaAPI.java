@@ -97,6 +97,11 @@ public class FoliaAPI {
             if (cancelTasksMethod != null) cachedMethods.put("asyncScheduler.cancelTasks", cancelTasksMethod);
         }
 
+        Method isOwnedByCurrentRegionLocation = getMethod(Server.class, "isOwnedByCurrentRegion", Location.class);
+        if (isOwnedByCurrentRegionLocation != null) {
+            cachedMethods.put("server.isOwnedByCurrentRegionLocation", isOwnedByCurrentRegionLocation);
+        }
+
         // FIX 4: cache the three Server scheduler lookup methods so getGlobalRegionScheduler() etc.
         // never repeat the same getMethod(Server.class, ...) call at runtime.
         Method getGlobalMethod = getMethod(Server.class, "getGlobalRegionScheduler");
@@ -149,6 +154,18 @@ public class FoliaAPI {
     // isFolia() now returns the pre-computed constant — zero overhead per call.
     public static boolean isFolia() {
         return IS_FOLIA;
+    }
+
+    public static boolean isOwnedByCurrentRegion(final Location location) {
+        if (!isFolia() || location == null || location.getWorld() == null) {
+            return true;
+        }
+        final Method method = cachedMethods.get("server.isOwnedByCurrentRegionLocation");
+        if (method == null) {
+            return true;
+        }
+        final Object result = invokeMethod(method, Bukkit.getServer(), location);
+        return !(result instanceof Boolean) || ((Boolean) result).booleanValue();
     }
 
     public static void runTaskAsync(Runnable run, long delay) {
@@ -342,6 +359,21 @@ public class FoliaAPI {
         }
     }
 
+    public static CompletableFuture<Boolean> teleportPlayerNow(final Player player,
+                                                               final Location location,
+                                                               final TeleportCause cause,
+                                                               final Runnable preTeleportHook) {
+        if (player == null || location == null) {
+            return CompletableFuture.completedFuture(false);
+        }
+        final CompletableFuture<Boolean> out = new CompletableFuture<>();
+        if (preTeleportHook != null) {
+            preTeleportHook.run();
+        }
+        performTeleportAndComplete(player, location, cause, out);
+        return out;
+    }
+
     public static CompletableFuture<Boolean> teleportPlayer(Player e, Location location, Boolean async) {
         if (e == null) return CompletableFuture.completedFuture(false); // null guard
         if (isFolia()) {
@@ -410,15 +442,29 @@ public class FoliaAPI {
     }
 
     public static CompletableFuture<Boolean> teleportPlayer(Player e, Location location, TeleportCause cause, long delay) {
+        return teleportPlayer(e, location, cause, delay, null); // delegate to hook-aware overload with no hook
+    }
+
+    public static CompletableFuture<Boolean> teleportPlayer(Player e, Location location, TeleportCause cause, long delay, Runnable preTeleportHook) {
         if (e == null) return CompletableFuture.completedFuture(false); // null guard
         final long safeDelay = Math.max(1L, delay); // ensure at least 1 tick for folia entity scheduler
         if (isFolia()) {
             final CompletableFuture<Boolean> out = new CompletableFuture<>();
-            runTaskForEntity(e, () -> performTeleportAndComplete(e, location, cause, out), () -> {}, safeDelay);
+            runTaskForEntity(e, () -> {
+                if (preTeleportHook != null) {
+                    preTeleportHook.run(); // run hook right before teleport so consumers can refresh real-time data
+                }
+                performTeleportAndComplete(e, location, cause, out);
+            }, () -> {}, safeDelay);
             return out;
         }
         final CompletableFuture<Boolean> out = new CompletableFuture<>();
-        Runnable task = () -> performTeleportAndComplete(e, location, cause, out); // scheduleable task
+        Runnable task = () -> {
+            if (preTeleportHook != null) {
+                preTeleportHook.run(); // run hook right before teleport so consumers can refresh real-time data
+            }
+            performTeleportAndComplete(e, location, cause, out);
+        };
         bS.runTaskLater(FlamePearls.getInstance(), task, delay); // non-folia uses sync scheduling as before
         return out;
     }
@@ -439,6 +485,19 @@ public class FoliaAPI {
             bS.runTaskLater(FlamePearls.getInstance(), task, delay);
         }
         return out;
+    }
+
+    public static void cancelScheduledTask(final Object scheduledTask) {
+        if (scheduledTask == null) {
+            return;
+        }
+        try {
+            final Method cancelMethod = scheduledTask.getClass().getMethod("cancel");
+            cancelMethod.setAccessible(true);
+            cancelMethod.invoke(scheduledTask);
+        } catch (final Exception exception) {
+            exception.printStackTrace();
+        }
     }
 
     public static void cancelAllTasks() {

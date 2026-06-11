@@ -32,6 +32,16 @@ public class OriginManager {
         return projectileOrigins.remove(projectile);
     }
 
+    public boolean containsProjectile(final Projectile projectile) {
+        return projectile != null && projectileOrigins.containsKey(projectile);
+    }
+
+    public void removeProjectile(final Projectile projectile) {
+        if (projectile != null) {
+            projectileOrigins.remove(projectile);
+        }
+    }
+
     public int getProjectileCount() {
         return projectileCount;
     }
