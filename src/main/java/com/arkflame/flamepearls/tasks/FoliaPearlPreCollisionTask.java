@@ -45,7 +45,7 @@ public final class FoliaPearlPreCollisionTask {
     }
 
     public void start() {
-        if (!FoliaAPI.isFolia()) {
+        if (!generalConfigHolder.isPearlTeleportFixEnabled()) {
             return;
         }
         FoliaAPI.runTaskForEntityRepeating(
@@ -59,6 +59,11 @@ public final class FoliaPearlPreCollisionTask {
 
     private void tick(final Object scheduledTask) {
         if (finished) {
+            FoliaAPI.cancelScheduledTask(scheduledTask);
+            return;
+        }
+        if (!generalConfigHolder.isPearlTeleportFixEnabled()) {
+            finishWithoutProjectileRemoval();
             FoliaAPI.cancelScheduledTask(scheduledTask);
             return;
         }

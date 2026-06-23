@@ -5,6 +5,7 @@ import com.arkflame.flamepearls.managers.OriginManager;
 import com.arkflame.flamepearls.services.PearlTeleportService;
 import com.arkflame.flamepearls.tasks.FoliaPearlPreCollisionTask;
 import com.arkflame.flamepearls.utils.FoliaAPI;
+import com.arkflame.flamepearls.utils.ProjectileHitEventSupport;
 import org.bukkit.Location;
 import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.Player;
@@ -45,7 +46,10 @@ public final class ProjectileLaunchListener implements Listener {
         final Location origin = player.getLocation().clone();
         originManager.setOrigin(projectile, origin);
 
-        if (!FoliaAPI.isFolia()) {
+        if (!generalConfigHolder.isPearlTeleportFixEnabled()) {
+            return;
+        }
+        if (!FoliaAPI.isFolia() && ProjectileHitEventSupport.canCancel()) {
             return;
         }
 

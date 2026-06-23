@@ -1,10 +1,12 @@
 package com.arkflame.flamepearls.listeners;
 
 import com.arkflame.flamepearls.FlamePearls;
+import com.arkflame.flamepearls.config.GeneralConfigHolder;
 import com.arkflame.flamepearls.managers.OriginManager;
 import com.arkflame.flamepearls.services.PearlTeleportOutcome;
 import com.arkflame.flamepearls.services.PearlTeleportService;
 import com.arkflame.flamepearls.utils.FoliaAPI;
+import com.arkflame.flamepearls.utils.ProjectileHitEventSupport;
 import org.bukkit.Location;
 import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.Player;
@@ -19,11 +21,14 @@ import java.util.Objects;
 public final class ProjectileHitListener implements Listener {
     private final PearlTeleportService pearlTeleportService;
     private final OriginManager originManager;
+    private final GeneralConfigHolder generalConfigHolder;
 
     public ProjectileHitListener(final PearlTeleportService pearlTeleportService,
-                                 final OriginManager originManager) {
+                                 final OriginManager originManager,
+                                 final GeneralConfigHolder generalConfigHolder) {
         this.pearlTeleportService = Objects.requireNonNull(pearlTeleportService, "pearlTeleportService");
         this.originManager = Objects.requireNonNull(originManager, "originManager");
+        this.generalConfigHolder = Objects.requireNonNull(generalConfigHolder, "generalConfigHolder");
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -38,7 +43,12 @@ public final class ProjectileHitListener implements Listener {
             return;
         }
 
-        if (FoliaAPI.isFolia()) {
+        if (!generalConfigHolder.isPearlTeleportFixEnabled()) {
+            originManager.removeProjectile(projectile);
+            return;
+        }
+        if (FoliaAPI.isFolia() || !ProjectileHitEventSupport.canCancel()) {
+            originManager.removeProjectile(projectile);
             return;
         }
 
@@ -58,10 +68,9 @@ public final class ProjectileHitListener implements Listener {
                 false
         );
 
-        if (outcome == PearlTeleportOutcome.BLOCKED) {
-            event.setCancelled(true);
-        } else if (outcome == PearlTeleportOutcome.TELEPORTED) {
-            event.setCancelled(false);
+        if (outcome == PearlTeleportOutcome.BLOCKED || outcome == PearlTeleportOutcome.TELEPORTED) {
+            ProjectileHitEventSupport.setCancelled(event, true);
+            projectile.remove();
         }
     }
 }

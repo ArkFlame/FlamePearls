@@ -13,6 +13,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
+import org.bukkit.scheduler.BukkitTask;
 import com.arkflame.flamepearls.FlamePearls;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 
@@ -267,17 +268,25 @@ public class FoliaAPI {
         }
     }
 
-    public static void runTaskForEntityRepeating(Entity entity, Consumer<Object> task, Runnable retired,
-                                                 long initialDelay, long period) {
+    public static Object runTaskForEntityRepeating(Entity entity, Consumer<Object> task, Runnable retired,
+                                                   long initialDelay, long period) {
         if (!isFolia()) {
-            bS.runTaskTimer(FlamePearls.getInstance(), () -> task.accept(null), initialDelay, period);
-            return;
+            final BukkitTask[] holder = new BukkitTask[1];
+            holder[0] = bS.runTaskTimer(
+                    FlamePearls.getInstance(),
+                    () -> task.accept(holder[0]),
+                    initialDelay,
+                    period
+            );
+            return holder[0];
         }
-        if (entity == null) return;
+        if (entity == null) {
+            return null;
+        }
         Method getSchedulerMethod = cachedMethods.get("entity.getScheduler");
         Object entityScheduler = invokeMethod(getSchedulerMethod, entity);
         Method runAtFixedRateMethod = cachedMethods.get("entityScheduler.runAtFixedRate");
-        invokeMethod(runAtFixedRateMethod, entityScheduler, FlamePearls.getInstance(), task, retired, initialDelay, period);
+        return invokeMethod(runAtFixedRateMethod, entityScheduler, FlamePearls.getInstance(), task, retired, initialDelay, period);
     }
 
     public static void runTaskForRegion(World world, int chunkX, int chunkZ, Runnable run) {

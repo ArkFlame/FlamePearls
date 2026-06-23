@@ -21,6 +21,7 @@ public class GeneralConfigHolder {
     private static final String LEGACY_DISABLE_ENDERMITES_PATH = "disable-endermites";
     private static final String LEGACY_ENDERMITE_CHANCE_PATH = "endermite-chance";
     private static final String PREVENT_PEARL_ON_CLICK_BLOCK_PATH = "prevent-pearl-on-click-block";
+    private static final String PEARL_TELEPORT_FIX_ENABLED_PATH = "pearl-teleport-fix.enabled";
     private static final String RESET_FALL_DAMAGE_PATH = "reset-fall-damage-after-teleport";
     private static final String NO_DAMAGE_TICKS_PATH = "teleport-no-damage-ticks";
     private static final String PEARL_DAMAGE_SELF_PATH = "pearl-damage-self";
@@ -52,6 +53,7 @@ public class GeneralConfigHolder {
     private boolean resetVelocityAfterTeleport;
     private boolean pearlCooldownEnabled;
     private boolean preventPearlOnClickBlock;
+    private boolean pearlTeleportFixEnabled;
 
     private List<Integer> permissionCooldownTiers = Collections.emptyList();
     private List<Sound> pearlSounds = Collections.emptyList();
@@ -67,6 +69,7 @@ public class GeneralConfigHolder {
         endermitesEnabled = readEndermitesEnabled(config);
         endermiteChance = readEndermiteChance(config);
         preventPearlOnClickBlock = config.getBoolean(PREVENT_PEARL_ON_CLICK_BLOCK_PATH, false);
+        pearlTeleportFixEnabled = config.getBoolean(PEARL_TELEPORT_FIX_ENABLED_PATH, true);
         resetFallDamageAfterTeleport = config.getBoolean(RESET_FALL_DAMAGE_PATH, true);
         noDamageTicksAfterTeleport = config.getInt(NO_DAMAGE_TICKS_PATH, 0);
         pearlDamageSelf = config.getDouble(PEARL_DAMAGE_SELF_PATH, 5.0);

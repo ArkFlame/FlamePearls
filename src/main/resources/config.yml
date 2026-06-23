@@ -15,6 +15,12 @@ endermites:
 # Default false keeps block-click pearl behavior allowed.
 prevent-pearl-on-click-block: false
 
+# Controls FlamePearls custom ender pearl impact handling.
+# true = FlamePearls predicts/catches pearl impacts, computes a safe target, and manually teleports using ENDER_PEARL cause.
+# false = vanilla pearl impact/position behavior is preserved; cooldowns and non-position fixes can still run.
+pearl-teleport-fix:
+  enabled: true
+
 # Prevents players from taking fall damage that was accumulated before they teleported.
 reset-fall-damage-after-teleport: true
 
