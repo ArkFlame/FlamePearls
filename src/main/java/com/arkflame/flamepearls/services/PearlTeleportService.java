@@ -137,7 +137,7 @@ public final class PearlTeleportService {
             });
         }
 
-        Sounds.play(player.getLocation(), 1.0F, 1.0F, generalConfigHolder.getPearlSounds());
+        Sounds.play(origin, 1.0F, 1.0F, generalConfigHolder.getPearlSounds(), generalConfigHolder.getPearlSoundDistance());
 
         return PearlTeleportOutcome.TELEPORTED;
     }

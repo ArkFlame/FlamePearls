@@ -44,20 +44,22 @@ public final class Sounds {
     }
 
     /**
-     * Plays a list of pre-parsed sounds at a specific location.
-     * This is the most efficient method to use as it requires no string parsing.
+     * Plays a list of pre-parsed sounds at a specific location with a custom distance.
+     * In older versions, distance is simulated by increasing volume.
      *
      * @param location The location to play the sounds at.
      * @param volume   The volume of the sounds.
      * @param pitch    The pitch of the sounds.
      * @param sounds   The list of Sound enums to play.
+     * @param distance The distance in blocks that the sound should travel (used to scale volume).
      */
-    public static void play(@NotNull Location location, float volume, float pitch, @NotNull List<Sound> sounds) {
+    public static void play(@NotNull Location location, float volume, float pitch, @NotNull List<Sound> sounds, double distance) {
         if (sounds.isEmpty()) {
             return;
         }
+        float scaledVolume = Math.max(volume, (float) (volume * (distance / 64.0)));
         for (Sound sound : sounds) {
-            location.getWorld().playSound(location, sound, volume, pitch);
+            location.getWorld().playSound(location, sound, scaledVolume, pitch);
         }
     }
     

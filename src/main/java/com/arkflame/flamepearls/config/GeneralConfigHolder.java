@@ -32,6 +32,7 @@ public class GeneralConfigHolder {
     private static final String LEGACY_PEARL_COOLDOWN_PATH = "pearl-cooldown";
     private static final String LEGACY_PEARL_COOLDOWN_PERMS_PATH = "pearl-cooldowns-perms";
     private static final String PEARL_SOUND_PATH = "pearl-sound";
+    private static final String PEARL_SOUND_DISTANCE_PATH = "pearl-sound-distance";
     private static final String DISABLED_WORLDS_PATH = "disabled-worlds";
     private static final String MAX_TICKS_ALIVE_PATH = "max-ticks-alive";
     private static final String PREVENT_WORLD_BORDER_TELEPORT = "prevent-world-border-teleport";
@@ -57,6 +58,7 @@ public class GeneralConfigHolder {
 
     private List<Integer> permissionCooldownTiers = Collections.emptyList();
     private List<Sound> pearlSounds = Collections.emptyList();
+    private double pearlSoundDistance = 64.0;
     private Set<String> disabledWorlds = Collections.emptySet();
 
     private double maxTeleportDistance = 500.0;
@@ -82,6 +84,7 @@ public class GeneralConfigHolder {
         disabledWorlds = new HashSet<>(config.getStringList(DISABLED_WORLDS_PATH));
 
         pearlSounds = loadSounds(config, PEARL_SOUND_PATH);
+        pearlSoundDistance = config.getDouble(PEARL_SOUND_DISTANCE_PATH, 64.0);
 
         // Load max ticks alive and whether the feature is enabled.
         maxTicksAlive = config.getInt(MAX_TICKS_ALIVE_PATH, 1200);

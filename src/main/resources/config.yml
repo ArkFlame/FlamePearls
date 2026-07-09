@@ -65,6 +65,9 @@ pearl-sound:
   - "ENDERMAN_TELEPORT"
   - "ENTITY_ENDERMAN_TELEPORT"
 
+# Distance in blocks that the pearl sound can be heard.
+pearl-sound-distance: 256.0
+
 # Pearls will behave like vanilla (including glitching) in these worlds.
 disabled-worlds:
   - "disabled_world"
