@@ -3,6 +3,8 @@ package com.arkflame.flamepearls;
 import com.arkflame.flamepearls.commands.FlamePearlsCommand;
 import com.arkflame.flamepearls.config.GeneralConfigHolder;
 import com.arkflame.flamepearls.config.MessagesConfigHolder;
+import com.arkflame.flamepearls.handlers.PearlFixerHandler;
+import com.arkflame.flamepearls.handlers.PearlFixerHandlerFactory;
 import com.arkflame.flamepearls.hooks.FlamePearlsPlaceholderHook;
 import com.arkflame.flamepearls.listeners.*;
 import com.arkflame.flamepearls.managers.CooldownManager;
@@ -41,6 +43,7 @@ public class FlamePearls extends JavaPlugin {
 
     // Services
     private PearlTeleportService pearlTeleportService;
+    private PearlFixerHandler pearlFixerHandler;
 
     @Override
     public void onLoad() {
@@ -96,6 +99,11 @@ public class FlamePearls extends JavaPlugin {
                 generalConfigHolder,
                 messagesConfigHolder
         );
+        pearlFixerHandler = PearlFixerHandlerFactory.create(
+                originManager,
+                generalConfigHolder,
+                pearlTeleportService
+        );
     }
 
     /**
@@ -110,9 +118,9 @@ public class FlamePearls extends JavaPlugin {
         pluginManager.registerEvents(new PlayerJoinListener(), this);
         pluginManager.registerEvents(new PlayerQuitListener(teleportDataManager, cooldownManager), this);
         pluginManager.registerEvents(new PlayerTeleportListener(originManager, generalConfigHolder, messagesConfigHolder), this);
-        pluginManager.registerEvents(new ProjectileHitListener(pearlTeleportService, originManager, generalConfigHolder), this);
+        pluginManager.registerEvents(new ProjectileHitListener(pearlFixerHandler), this);
         pluginManager.registerEvents(new PlayerChangedWorldListener(originManager), this);
-        pluginManager.registerEvents(new ProjectileLaunchListener(originManager, generalConfigHolder, pearlTeleportService), this);
+        pluginManager.registerEvents(new ProjectileLaunchListener(pearlFixerHandler), this);
     }
 
     /**

@@ -22,6 +22,7 @@ import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.util.Vector;
 
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 public final class PearlTeleportService {
     private final TeleportDataManager teleportDataManager;
@@ -101,11 +102,12 @@ public final class PearlTeleportService {
 
         final Location teleportTarget = safeLocation;
         final Runnable directionRefresh = () -> teleportTarget.setDirection(player.getLocation().getDirection());
+        final CompletableFuture<Boolean> teleportFuture;
         if (FoliaAPI.isFolia() && preCollision) {
-            FoliaAPI.teleportPlayerNow(player, teleportTarget, TeleportCause.ENDER_PEARL, directionRefresh);
+            teleportFuture = FoliaAPI.teleportPlayerNow(player, teleportTarget, TeleportCause.ENDER_PEARL, directionRefresh);
         } else {
             final long teleportDelay = FoliaAPI.isFolia() ? 2L : 0L;
-            FoliaAPI.teleportPlayer(
+            teleportFuture = FoliaAPI.teleportPlayer(
                     player,
                     teleportTarget,
                     TeleportCause.ENDER_PEARL,
@@ -137,8 +139,25 @@ public final class PearlTeleportService {
             });
         }
 
-        Sounds.play(player.getLocation(), 1.0F, 1.0F, generalConfigHolder.getPearlSounds());
+        scheduleTeleportSound(impactLocation, teleportFuture);
 
         return PearlTeleportOutcome.TELEPORTED;
+    }
+
+    private void scheduleTeleportSound(final Location impactLocation, final CompletableFuture<Boolean> teleportFuture) {
+        if (impactLocation == null || teleportFuture == null || generalConfigHolder.getPearlSounds().isEmpty()) {
+            return;
+        }
+
+        final Location soundLocation = impactLocation.clone();
+        teleportFuture.whenComplete((success, throwable) -> {
+            if (throwable != null || !Boolean.TRUE.equals(success)) {
+                return;
+            }
+            FoliaAPI.runTaskForRegion(
+                    soundLocation,
+                    () -> Sounds.play(soundLocation, 1.0F, 1.0F, generalConfigHolder.getPearlSounds())
+            );
+        });
     }
 }

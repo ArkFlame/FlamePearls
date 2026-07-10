@@ -3,6 +3,7 @@ package com.arkflame.flamepearls.utils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Sound;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
@@ -56,8 +57,12 @@ public final class Sounds {
         if (sounds.isEmpty()) {
             return;
         }
+        final World world = location.getWorld();
+        if (world == null) {
+            return;
+        }
         for (Sound sound : sounds) {
-            location.getWorld().playSound(location, sound, volume, pitch);
+            world.playSound(location, sound, volume, pitch);
         }
     }
     
@@ -96,8 +101,12 @@ public final class Sounds {
      * Plays the first valid sound from a list of names at a specific location.
      */
     public static void play(@NotNull Location location, float volume, float pitch, @NotNull String... soundNames) {
+        final World world = location.getWorld();
+        if (world == null) {
+            return;
+        }
         findFirstValid(Arrays.asList(soundNames)).ifPresent(sound ->
-                location.getWorld().playSound(location, sound, volume, pitch)
+                world.playSound(location, sound, volume, pitch)
         );
     }
 
