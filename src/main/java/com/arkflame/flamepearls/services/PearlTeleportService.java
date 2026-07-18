@@ -124,9 +124,12 @@ public final class PearlTeleportService {
             Players.setGliding(player, gliding);
         }
 
+        // Damage must be applied AFTER teleport completes, not immediately.
+        // Otherwise the player dies at the pre-teleport location, then the delayed
+        // async teleport moves the dead entity, breaking respawn at FFA spawn.
         final double damage = generalConfigHolder.getPearlDamageSelf();
         if (damage >= 0.0D) {
-            player.damage(damage, projectile);
+            teleportFuture.thenAccept(success -> player.damage(damage, projectile));
         }
 
         if (generalConfigHolder.isEndermitesEnabled() && generalConfigHolder.getEndermiteChance() > Math.random()) {
