@@ -27,6 +27,7 @@ public class GeneralConfigHolder {
     private static final String PEARL_DAMAGE_SELF_PATH = "pearl-damage-self";
     private static final String PEARL_DAMAGE_OTHER_PATH = "pearl-damage-other";
     private static final String COOLDOWN_ENABLED_PATH = "cooldown.enabled";
+    private static final String MODERN_COOLDOWN_PATH = "cooldown.modern-cooldown";
     private static final String COOLDOWN_TIME_PATH = "cooldown.time";
     private static final String COOLDOWN_PERMISSION_TIERS_PATH = "cooldown.permission-tiers";
     private static final String LEGACY_PEARL_COOLDOWN_PATH = "pearl-cooldown";
@@ -52,6 +53,7 @@ public class GeneralConfigHolder {
     private boolean preventWorldSwitchTeleport;
     private boolean resetVelocityAfterTeleport;
     private boolean pearlCooldownEnabled;
+    private boolean modernCooldownEnabled;
     private boolean preventPearlOnClickBlock;
     private boolean pearlTeleportFixEnabled;
 
@@ -76,6 +78,7 @@ public class GeneralConfigHolder {
         pearlDamageOther = config.getDouble(PEARL_DAMAGE_OTHER_PATH, 2.0);
 
         pearlCooldownEnabled = config.getBoolean(COOLDOWN_ENABLED_PATH, true);
+        modernCooldownEnabled = config.getBoolean(MODERN_COOLDOWN_PATH, true);
         defaultPearlCooldown = readCooldownSeconds(config);
         permissionCooldownTiers = readCooldownTiers(config);
 

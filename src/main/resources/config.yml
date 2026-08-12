@@ -47,6 +47,9 @@ pearl-damage-other: 2.0 # 1 heart
 cooldown:
   # Enables plugin cooldown enforcement.
   enabled: true
+  # Syncs FlamePearls' cooldown with the modern vanilla item cooldown overlay/state.
+  # Unsupported legacy servers ignore this safely. Missing value defaults to true.
+  modern-cooldown: true
   # The default cooldown in seconds for players without a tier permission.
   time: 10.0
   # Permission-based cooldowns. Players get the LOWEST value they have permission for.

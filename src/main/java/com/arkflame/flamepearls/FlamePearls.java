@@ -1,6 +1,8 @@
 package com.arkflame.flamepearls;
 
 import com.arkflame.flamepearls.commands.FlamePearlsCommand;
+import com.arkflame.flamepearls.compat.cooldown.PearlCooldownBridge;
+import com.arkflame.flamepearls.compat.cooldown.PearlCooldownBridgeFactory;
 import com.arkflame.flamepearls.config.GeneralConfigHolder;
 import com.arkflame.flamepearls.config.MessagesConfigHolder;
 import com.arkflame.flamepearls.handlers.PearlFixerHandler;
@@ -35,7 +37,7 @@ public class FlamePearls extends JavaPlugin {
 
     // Managers
     private OriginManager originManager = new OriginManager();
-    private CooldownManager cooldownManager = new CooldownManager();
+    private CooldownManager cooldownManager;
     private TeleportDataManager teleportDataManager = new TeleportDataManager();
 
     // Hooks
@@ -104,6 +106,8 @@ public class FlamePearls extends JavaPlugin {
                 generalConfigHolder,
                 pearlTeleportService
         );
+        final PearlCooldownBridge pearlCooldownBridge = PearlCooldownBridgeFactory.create(getLogger());
+        cooldownManager = new CooldownManager(generalConfigHolder, pearlCooldownBridge);
     }
 
     /**
@@ -120,7 +124,7 @@ public class FlamePearls extends JavaPlugin {
         pluginManager.registerEvents(new PlayerTeleportListener(originManager, generalConfigHolder, messagesConfigHolder), this);
         pluginManager.registerEvents(new ProjectileHitListener(pearlFixerHandler), this);
         pluginManager.registerEvents(new PlayerChangedWorldListener(originManager), this);
-        pluginManager.registerEvents(new ProjectileLaunchListener(pearlFixerHandler), this);
+        pluginManager.registerEvents(new ProjectileLaunchListener(pearlFixerHandler, cooldownManager), this);
     }
 
     /**
