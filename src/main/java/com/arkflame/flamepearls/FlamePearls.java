@@ -3,6 +3,8 @@ package com.arkflame.flamepearls;
 import com.arkflame.flamepearls.commands.FlamePearlsCommand;
 import com.arkflame.flamepearls.compat.cooldown.PearlCooldownBridge;
 import com.arkflame.flamepearls.compat.cooldown.PearlCooldownBridgeFactory;
+import com.arkflame.flamepearls.compat.endermite.EndermiteSpawnBridge;
+import com.arkflame.flamepearls.compat.endermite.EndermiteSpawnBridgeFactory;
 import com.arkflame.flamepearls.config.GeneralConfigHolder;
 import com.arkflame.flamepearls.config.MessagesConfigHolder;
 import com.arkflame.flamepearls.handlers.PearlFixerHandler;
@@ -12,6 +14,7 @@ import com.arkflame.flamepearls.listeners.*;
 import com.arkflame.flamepearls.managers.CooldownManager;
 import com.arkflame.flamepearls.managers.OriginManager;
 import com.arkflame.flamepearls.managers.TeleportDataManager;
+import com.arkflame.flamepearls.services.EndermiteSpawnService;
 import com.arkflame.flamepearls.services.PearlTeleportService;
 import com.arkflame.flamepearls.tasks.PearlMaxTicksAliveTask;
 import com.arkflame.flamepearls.utils.FoliaAPI;
@@ -46,6 +49,7 @@ public class FlamePearls extends JavaPlugin {
     // Services
     private PearlTeleportService pearlTeleportService;
     private PearlFixerHandler pearlFixerHandler;
+    private EndermiteSpawnService endermiteSpawnService;
 
     @Override
     public void onLoad() {
@@ -95,11 +99,14 @@ public class FlamePearls extends JavaPlugin {
      * Initializes the cross-listener services used by event and Folia pre-collision paths.
      */
     private void initializeServices() {
+        final EndermiteSpawnBridge endermiteSpawnBridge = EndermiteSpawnBridgeFactory.create(getLogger());
+        endermiteSpawnService = new EndermiteSpawnService(generalConfigHolder, endermiteSpawnBridge);
         pearlTeleportService = new PearlTeleportService(
                 teleportDataManager,
                 originManager,
                 generalConfigHolder,
-                messagesConfigHolder
+                messagesConfigHolder,
+                endermiteSpawnService
         );
         pearlFixerHandler = PearlFixerHandlerFactory.create(
                 originManager,
@@ -115,14 +122,14 @@ public class FlamePearls extends JavaPlugin {
      */
     private void registerListeners() {
         PluginManager pluginManager = getServer().getPluginManager();
-        pluginManager.registerEvents(new CreatureSpawnListener(generalConfigHolder), this);
+        pluginManager.registerEvents(new CreatureSpawnListener(generalConfigHolder, endermiteSpawnService), this);
         pluginManager.registerEvents(new EntityDamageByEntityListener(generalConfigHolder), this);
         pluginManager.registerEvents(new EntityDamageListener(teleportDataManager, generalConfigHolder), this);
         pluginManager.registerEvents(new PlayerInteractListener(cooldownManager, messagesConfigHolder, generalConfigHolder), this);
         pluginManager.registerEvents(new PlayerJoinListener(), this);
         pluginManager.registerEvents(new PlayerQuitListener(teleportDataManager, cooldownManager), this);
         pluginManager.registerEvents(new PlayerTeleportListener(originManager, generalConfigHolder, messagesConfigHolder), this);
-        pluginManager.registerEvents(new ProjectileHitListener(pearlFixerHandler), this);
+        pluginManager.registerEvents(new ProjectileHitListener(pearlFixerHandler, endermiteSpawnService), this);
         pluginManager.registerEvents(new PlayerChangedWorldListener(originManager), this);
         pluginManager.registerEvents(new ProjectileLaunchListener(pearlFixerHandler, cooldownManager), this);
     }

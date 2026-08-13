@@ -1,16 +1,22 @@
 package com.arkflame.flamepearls.listeners;
 
 import com.arkflame.flamepearls.config.GeneralConfigHolder;
+import com.arkflame.flamepearls.services.EndermiteSpawnService;
 import org.bukkit.entity.Endermite;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 
+import java.util.Objects;
+
 public class CreatureSpawnListener implements Listener {
     private final GeneralConfigHolder generalConfigHolder;
+    private final EndermiteSpawnService endermiteSpawnService;
 
-    public CreatureSpawnListener(final GeneralConfigHolder generalConfigHolder) {
-        this.generalConfigHolder = generalConfigHolder;
+    public CreatureSpawnListener(final GeneralConfigHolder generalConfigHolder,
+                                 final EndermiteSpawnService endermiteSpawnService) {
+        this.generalConfigHolder = Objects.requireNonNull(generalConfigHolder, "generalConfigHolder");
+        this.endermiteSpawnService = Objects.requireNonNull(endermiteSpawnService, "endermiteSpawnService");
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -19,17 +25,12 @@ public class CreatureSpawnListener implements Listener {
             return;
         }
 
-        if (!generalConfigHolder.isEndermitesEnabled()) {
-            event.setCancelled(true);
+        if (!endermiteSpawnService.isPearlRelated(event)) {
             return;
         }
 
-        if (isEnderPearlSpawn(event)) {
+        if (!generalConfigHolder.isEndermitesEnabled()) {
             event.setCancelled(true);
         }
-    }
-
-    private boolean isEnderPearlSpawn(final CreatureSpawnEvent event) {
-        return event.getSpawnReason() != null && "ENDER_PEARL".equals(event.getSpawnReason().name());
     }
 }

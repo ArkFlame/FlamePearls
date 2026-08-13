@@ -15,7 +15,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
@@ -29,15 +28,18 @@ public final class PearlTeleportService {
     private final OriginManager originManager;
     private final GeneralConfigHolder generalConfigHolder;
     private final MessagesConfigHolder messagesConfigHolder;
+    private final EndermiteSpawnService endermiteSpawnService;
 
     public PearlTeleportService(final TeleportDataManager teleportDataManager,
                                 final OriginManager originManager,
                                 final GeneralConfigHolder generalConfigHolder,
-                                final MessagesConfigHolder messagesConfigHolder) {
+                                final MessagesConfigHolder messagesConfigHolder,
+                                final EndermiteSpawnService endermiteSpawnService) {
         this.teleportDataManager = Objects.requireNonNull(teleportDataManager, "teleportDataManager");
         this.originManager = Objects.requireNonNull(originManager, "originManager");
         this.generalConfigHolder = Objects.requireNonNull(generalConfigHolder, "generalConfigHolder");
         this.messagesConfigHolder = Objects.requireNonNull(messagesConfigHolder, "messagesConfigHolder");
+        this.endermiteSpawnService = Objects.requireNonNull(endermiteSpawnService, "endermiteSpawnService");
     }
 
     public PearlTeleportOutcome handleImpact(final Player player,
@@ -55,6 +57,7 @@ public final class PearlTeleportService {
         }
 
         final Location playerPos = player.getLocation();
+        final Location endermiteFallbackLocation = playerPos.clone();
         final World playerWorld = playerPos.getWorld();
 
         if (generalConfigHolder.isPreventWorldSwitchTeleport() && WorldUtil.isDifferentWorld(origin, impactLocation)) {
@@ -116,6 +119,8 @@ public final class PearlTeleportService {
             );
         }
 
+        endermiteSpawnService.scheduleCustomImpactFallback(endermiteFallbackLocation, teleportFuture);
+
         if (!generalConfigHolder.isResetVelocityAfterTeleport()) {
             player.setVelocity(originalVelocityLocation);
         }
@@ -130,16 +135,6 @@ public final class PearlTeleportService {
         final double damage = generalConfigHolder.getPearlDamageSelf();
         if (damage >= 0.0D) {
             teleportFuture.thenAccept(success -> player.damage(damage, projectile));
-        }
-
-        if (generalConfigHolder.isEndermitesEnabled() && generalConfigHolder.getEndermiteChance() > Math.random()) {
-            final Location spawnLoc = projectile.getLocation().clone();
-            FoliaAPI.runTaskForRegion(spawnLoc, () -> {
-                final World spawnWorld = spawnLoc.getWorld();
-                if (spawnWorld != null) {
-                    spawnWorld.spawnEntity(spawnLoc, EntityType.ENDERMITE);
-                }
-            });
         }
 
         scheduleTeleportSound(impactLocation, teleportFuture);
