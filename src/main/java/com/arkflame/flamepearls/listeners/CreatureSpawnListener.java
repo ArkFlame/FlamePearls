@@ -25,11 +25,11 @@ public class CreatureSpawnListener implements Listener {
             return;
         }
 
-        if (!endermiteSpawnService.isPearlRelated(event)) {
+        if (generalConfigHolder.isEndermitesEnabled()) {
             return;
         }
 
-        if (!generalConfigHolder.isEndermitesEnabled()) {
+        if (endermiteSpawnService.isPearlRelated(event)) {
             event.setCancelled(true);
         }
     }

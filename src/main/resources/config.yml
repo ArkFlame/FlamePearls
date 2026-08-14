@@ -4,11 +4,11 @@
 
 # --- Gameplay Mechanics ---
 
-# Controls endermites caused by ender pearls only.
-# enabled: false cancels pearl-caused endermite spawns; unrelated endermite spawns are untouched.
-# Native pearl impacts keep the server/vanilla spawn chance and spawning rules.
-# chance: fallback chance from 0.0 to 1.0 used only when pearl-teleport-fix consumes the
-# native pearl impact and FlamePearls must reproduce the otherwise-missed endermite opportunity.
+# Controls Endermites caused by ender pearls only.
+# enabled: false cancels pearl-related CreatureSpawnEvent spawns; unrelated Endermites stay untouched.
+# Native pearl impacts keep the server's own spawn decision; FlamePearls does not re-roll them.
+# chance is used only when pearl-teleport-fix consumes the native impact and FlamePearls must create
+# the otherwise-missed fallback opportunity after a successful custom teleport.
 endermites:
   enabled: false
   chance: 0.05

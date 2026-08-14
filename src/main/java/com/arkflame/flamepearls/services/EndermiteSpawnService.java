@@ -4,7 +4,6 @@ import com.arkflame.flamepearls.compat.endermite.EndermiteSpawnBridge;
 import com.arkflame.flamepearls.config.GeneralConfigHolder;
 import com.arkflame.flamepearls.utils.FoliaAPI;
 import org.bukkit.Location;
-import org.bukkit.World;
 import org.bukkit.entity.Endermite;
 import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.Player;
@@ -12,12 +11,14 @@ import org.bukkit.entity.Projectile;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 
-import java.util.Iterator;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.DoubleSupplier;
 import java.util.function.LongSupplier;
 
@@ -25,13 +26,16 @@ public final class EndermiteSpawnService {
     private static final long RECENT_IMPACT_TTL_NANOS = TimeUnit.SECONDS.toNanos(1L);
     private static final double RECENT_IMPACT_RADIUS_SQUARED = 0.25D;
     private static final int MAX_RECENT_IMPACTS = 4096;
+    private static final int RECENT_IMPACT_RING_MASK = MAX_RECENT_IMPACTS - 1;
 
     private final GeneralConfigHolder generalConfigHolder;
     private final EndermiteSpawnBridge spawnBridge;
     private final DoubleSupplier random;
     private final LongSupplier nanoClock;
     private final boolean enderPearlReasonAvailable;
-    private final ConcurrentLinkedDeque<RecentPearlImpact> recentImpacts = new ConcurrentLinkedDeque<>();
+    private final ConcurrentMap<UUID, ConcurrentMap<Long, RecentPearlImpact>> recentImpactsByWorldChunk = new ConcurrentHashMap<>();
+    private final AtomicReferenceArray<RecentPearlImpact> recentImpactEvictionRing = new AtomicReferenceArray<>(MAX_RECENT_IMPACTS);
+    private final AtomicLong recentImpactSequence = new AtomicLong();
 
     public EndermiteSpawnService(final GeneralConfigHolder generalConfigHolder,
                                  final EndermiteSpawnBridge spawnBridge) {
@@ -59,7 +63,13 @@ public final class EndermiteSpawnService {
     }
 
     public void recordPotentialNativePearlImpact(final ProjectileHitEvent event) {
-        if (enderPearlReasonAvailable || event == null) {
+        if (enderPearlReasonAvailable) {
+            return;
+        }
+        if (generalConfigHolder.isEndermitesEnabled()) {
+            return;
+        }
+        if (event == null) {
             return;
         }
         final Projectile projectile = event.getEntity();
@@ -88,54 +98,67 @@ public final class EndermiteSpawnService {
         if (!isUsable(location)) {
             return;
         }
+        final UUID worldId = location.getWorld().getUID();
+        final long chunkKey = chunkKey(location);
         final long now = nanoClock.getAsLong();
-        final Iterator<RecentPearlImpact> iterator = recentImpacts.iterator();
-        while (iterator.hasNext()) {
-            if (iterator.next().expiresAtNanos <= now) {
-                iterator.remove();
-            }
-        }
-        while (recentImpacts.size() >= MAX_RECENT_IMPACTS) {
-            recentImpacts.pollFirst();
-        }
-        recentImpacts.addLast(new RecentPearlImpact(
-                location.getWorld().getUID(),
+        final RecentPearlImpact impact = new RecentPearlImpact(
+                worldId,
+                chunkKey,
                 location.getX(),
                 location.getY(),
                 location.getZ(),
                 now + RECENT_IMPACT_TTL_NANOS
-        ));
+        );
+        recentImpactsByWorldChunk.computeIfAbsent(worldId, ignored -> new ConcurrentHashMap<>()).put(chunkKey, impact);
+        final int slot = (int) (recentImpactSequence.getAndIncrement() & RECENT_IMPACT_RING_MASK);
+        final RecentPearlImpact evicted = recentImpactEvictionRing.getAndSet(slot, impact);
+        if (evicted != null) {
+            removeIndexedImpact(evicted);
+        }
     }
 
     boolean consumeRecentImpactNear(final Location location) {
         if (!isUsable(location)) {
             return false;
         }
-        final long now = nanoClock.getAsLong();
         final UUID worldId = location.getWorld().getUID();
-        final double x = location.getX();
-        final double y = location.getY();
-        final double z = location.getZ();
-        final Iterator<RecentPearlImpact> iterator = recentImpacts.iterator();
-        while (iterator.hasNext()) {
-            final RecentPearlImpact impact = iterator.next();
-            if (impact.expiresAtNanos <= now) {
-                iterator.remove();
-                continue;
-            }
-            if (!worldId.equals(impact.worldId)) {
-                continue;
-            }
-            final double dx = x - impact.x;
-            final double dy = y - impact.y;
-            final double dz = z - impact.z;
-            if (dx * dx + dy * dy + dz * dz <= RECENT_IMPACT_RADIUS_SQUARED) {
-                if (recentImpacts.remove(impact)) {
-                    return true;
-                }
-            }
+        final ConcurrentMap<Long, RecentPearlImpact> worldIndex = recentImpactsByWorldChunk.get(worldId);
+        if (worldIndex == null) {
+            return false;
         }
-        return false;
+        final long chunkKey = chunkKey(location);
+        final RecentPearlImpact impact = worldIndex.get(chunkKey);
+        if (impact == null) {
+            return false;
+        }
+        final long now = nanoClock.getAsLong();
+        if (impact.expiresAtNanos <= now) {
+            worldIndex.remove(chunkKey, impact);
+            return false;
+        }
+        final double dx = location.getX() - impact.x;
+        final double dy = location.getY() - impact.y;
+        final double dz = location.getZ() - impact.z;
+        if (dx * dx + dy * dy + dz * dz > RECENT_IMPACT_RADIUS_SQUARED) {
+            return false;
+        }
+        return worldIndex.remove(chunkKey, impact);
+    }
+
+    private void removeIndexedImpact(final RecentPearlImpact impact) {
+        final ConcurrentMap<Long, RecentPearlImpact> worldIndex = recentImpactsByWorldChunk.get(impact.worldId);
+        if (worldIndex == null) {
+            return;
+        }
+        worldIndex.remove(impact.chunkKey, impact);
+    }
+
+    private static long chunkKey(final Location location) {
+        return packChunkKey(location.getBlockX() >> 4, location.getBlockZ() >> 4);
+    }
+
+    static long packChunkKey(final int chunkX, final int chunkZ) {
+        return ((long) chunkX << 32) ^ (chunkZ & 0xffffffffL);
     }
 
     public void scheduleCustomImpactFallback(final Location preTeleportLocation,
@@ -149,19 +172,8 @@ public final class EndermiteSpawnService {
                 return;
             }
             FoliaAPI.runTaskForRegion(spawnLocation, () -> {
-                final World world = spawnLocation.getWorld();
-                if (world == null) {
+                if (!shouldAttemptFallback(generalConfigHolder.isEndermitesEnabled(), generalConfigHolder.getEndermiteChance(), random)) {
                     return;
-                }
-                final boolean endermitesEnabled = generalConfigHolder.isEndermitesEnabled();
-                final String doMobSpawning = world.getGameRuleValue("doMobSpawning");
-                final boolean mobSpawningEnabled = doMobSpawning != null && doMobSpawning.equalsIgnoreCase("true");
-                final double chance = generalConfigHolder.getEndermiteChance();
-                if (!shouldAttemptFallback(endermitesEnabled, mobSpawningEnabled, chance, random.getAsDouble())) {
-                    return;
-                }
-                if (!spawnBridge.preservesEnderPearlReason()) {
-                    recordRecentImpact(spawnLocation);
                 }
                 spawnBridge.spawn(spawnLocation);
             });
@@ -169,11 +181,19 @@ public final class EndermiteSpawnService {
     }
 
     static boolean shouldAttemptFallback(final boolean endermitesEnabled,
-                                         final boolean doMobSpawning,
                                          final double chance,
-                                         final double randomValue) {
-        return endermitesEnabled && doMobSpawning && chance > 0.0D
-                && randomValue >= 0.0D && randomValue < chance;
+                                         final DoubleSupplier random) {
+        if (!endermitesEnabled) {
+            return false;
+        }
+        if (!(chance > 0.0D)) {
+            return false;
+        }
+        if (chance >= 1.0D) {
+            return true;
+        }
+        final double roll = random.getAsDouble();
+        return roll >= 0.0D && roll < chance;
     }
 
     private static boolean isUsable(final Location location) {
@@ -190,17 +210,20 @@ public final class EndermiteSpawnService {
 
     private static final class RecentPearlImpact {
         private final UUID worldId;
+        private final long chunkKey;
         private final double x;
         private final double y;
         private final double z;
         private final long expiresAtNanos;
 
         private RecentPearlImpact(final UUID worldId,
+                                  final long chunkKey,
                                   final double x,
                                   final double y,
                                   final double z,
                                   final long expiresAtNanos) {
             this.worldId = worldId;
+            this.chunkKey = chunkKey;
             this.x = x;
             this.y = y;
             this.z = z;
