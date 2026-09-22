@@ -11,6 +11,8 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -77,6 +79,58 @@ public final class PlayerInteractListenerInventorySafetyTest {
                 EquipmentSlot.OFF_HAND);
         fixture.listener.onPlayerInteract(event);
         assertEquals(0, fixture.inventoryWriteCount.get());
+    }
+
+    @Test
+    public void cooldownDeniedMainHandPearlDeniesItemUse() {
+        Fixture fixture = newFixture(false);
+        fixture.cooldownManager.updateLastPearl(fixture.player);
+        PlayerInteractEvent event = new PlayerInteractEvent(
+                fixture.player,
+                Action.RIGHT_CLICK_AIR,
+                new ItemStack(Material.ENDER_PEARL, 16),
+                null,
+                BlockFace.SELF,
+                EquipmentSlot.HAND);
+        fixture.listener.onPlayerInteract(event);
+        assertEquals(Event.Result.DENY, event.useItemInHand());
+    }
+
+    @Test
+    public void cooldownDeniedPearlCancelsInteraction() {
+        Fixture fixture = newFixture(false);
+        fixture.cooldownManager.updateLastPearl(fixture.player);
+        PlayerInteractEvent event = new PlayerInteractEvent(
+                fixture.player,
+                Action.RIGHT_CLICK_AIR,
+                new ItemStack(Material.ENDER_PEARL, 16),
+                null,
+                BlockFace.SELF,
+                EquipmentSlot.HAND);
+        fixture.listener.onPlayerInteract(event);
+        assertEquals(true, event.isCancelled());
+    }
+
+    @Test
+    public void cooldownListenerRunsAtHighestPriority() throws NoSuchMethodException {
+        Method method = PlayerInteractListener.class.getDeclaredMethod("onPlayerInteract", PlayerInteractEvent.class);
+        EventHandler eventHandler = method.getAnnotation(EventHandler.class);
+        assertEquals(EventPriority.HIGHEST, eventHandler.priority());
+    }
+
+    @Test
+    public void cooldownDeniedRightClickBlockOverridesAllowedItemUseToDeny() {
+        Fixture fixture = newFixture(false);
+        fixture.cooldownManager.updateLastPearl(fixture.player);
+        PlayerInteractEvent event = new PlayerInteractEvent(
+                fixture.player,
+                Action.RIGHT_CLICK_BLOCK,
+                new ItemStack(Material.ENDER_PEARL, 16),
+                null,
+                BlockFace.UP,
+                EquipmentSlot.HAND);
+        fixture.listener.onPlayerInteract(event);
+        assertEquals(Event.Result.DENY, event.useItemInHand());
     }
 
     // -- fixture --
